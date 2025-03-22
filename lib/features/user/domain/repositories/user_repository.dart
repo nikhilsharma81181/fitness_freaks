@@ -9,22 +9,12 @@ abstract class UserRepository {
   /// Updates the user profile
   Future<Either<Failure, User>> updateUser(User user);
 
-  /// Signs user in with email and password
-  Future<Either<Failure, User>> signInWithEmailAndPassword(
-    String email,
-    String password,
-  );
-
-  /// Signs user up with email and password
-  Future<Either<Failure, User>> signUpWithEmailAndPassword(
-    String email,
-    String password,
-    String name,
-  );
-
   /// Signs user out
   Future<Either<Failure, void>> signOut();
 
   /// Signs user in with Google
   Future<Either<Failure, User>> signInWithGoogle();
+
+  /// Creates or updates user profile after authentication
+  Future<Either<Failure, User>> createOrUpdateUser();
 }

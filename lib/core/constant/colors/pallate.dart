@@ -1,4 +1,3 @@
-// File: lib/core/constant/colors/palette.dart
 import 'package:flutter/material.dart';
 
 /// Palette class that mirrors the Swift color extensions exactly

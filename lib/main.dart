@@ -1,12 +1,7 @@
 import 'package:fitness_freaks/core/constant/colors/pallate.dart';
-import 'package:fitness_freaks/features/fitness/presentation/views/fitness_tab.dart';
-import 'package:fitness_freaks/features/homepage/presentation/views/home_view.dart';
 import 'package:fitness_freaks/features/homepage/presentation/views/homepage.dart';
 import 'package:fitness_freaks/features/homepage/presentation/widgets/background_gradient.dart';
-import 'package:fitness_freaks/features/homepage/presentation/widgets/glass_tab_bar.dart';
-import 'package:fitness_freaks/features/user/domain/entities/user.dart';
 import 'package:fitness_freaks/features/user/presentation/pages/login_page.dart';
-import 'package:fitness_freaks/features/user/presentation/pages/profile_page.dart';
 import 'package:fitness_freaks/features/user/presentation/providers/user_notifier.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -20,8 +15,29 @@ import 'package:fitness_freaks/features/user/domain/usecases/usecase_providers.d
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Custom error widget to filter out mouse tracker errors
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    // Ignore specific mouse tracker errors
+    if (details.exception is FlutterError && 
+        details.exception.toString().contains("mouse_tracker.dart") &&
+        details.exception.toString().contains("PointerAddedEvent")) {
+      // Return an empty container instead of showing the error
+      return const SizedBox.shrink();
+    }
+    
+    // For all other errors, use the default error widget
+    return ErrorWidget(details.exception);
+  };
+
+  print("App: Initializing Firebase");
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print("App: Firebase initialized successfully");
+  } catch (e) {
+    print("App: Firebase initialization error: $e");
+  }
 
   // Set preferred orientations
   SystemChrome.setPreferredOrientations([
@@ -47,9 +63,16 @@ class AppInit extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    print("AppInit: Starting app initialization");
+
     // Explicitly trigger repository initialization and wait for it
     // This ensures the repository is initialized before any other providers try to use it
-    ref.watch(initializeRepositoryProvider);
+    try {
+      ref.watch(initializeRepositoryProvider);
+      print("AppInit: Repository initialization triggered");
+    } catch (e) {
+      print("AppInit: Repository initialization error: $e");
+    }
 
     return const MyApp();
   }
@@ -60,6 +83,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("MyApp: Building main app");
     return CupertinoApp(
       title: 'Fitness Freaks',
       debugShowCheckedModeBanner: false,
@@ -99,8 +123,37 @@ class AuthWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    print("AuthWrapper: Building auth wrapper");
+
     // Make sure the repository is initialized
-    ref.watch(initializeRepositoryProvider);
+    try {
+      ref.watch(initializeRepositoryProvider);
+    } catch (e) {
+      print("AuthWrapper: Repository initialization error: $e");
+      // Show error screen if repository initialization fails
+      return Scaffold(
+        backgroundColor: Pallate.darkBackground,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 20),
+              const Text(
+                "Failed to initialize app",
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                e.toString(),
+                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     // Listen to user state changes
     final userState = ref.watch(userNotifierProvider);
@@ -121,6 +174,41 @@ class AuthWrapper extends ConsumerWidget {
               Text(
                 "Loading your profile...",
                 style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show error screen if there's an authentication error
+    if (userState.status == UserStatus.error) {
+      return Scaffold(
+        backgroundColor: Pallate.darkBackground,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 20),
+              const Text(
+                "Authentication Error",
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                userState.errorMessage ?? "Unknown error",
+                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              RawMaterialButton(
+                fillColor: Pallate.accentGreen,
+                onPressed: () {
+                  // Retry authentication
+                  ref.read(userNotifierProvider.notifier).getCurrentUser();
+                },
+                child: const Text("Retry"),
               ),
             ],
           ),

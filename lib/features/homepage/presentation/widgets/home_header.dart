@@ -1,5 +1,3 @@
-// File: lib/features/home/presentation/widgets/home_header.dart
-
 import 'dart:ui';
 
 import 'package:flutter/material.dart';

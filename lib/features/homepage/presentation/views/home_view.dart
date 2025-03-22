@@ -1,4 +1,3 @@
-// File: lib/features/home/presentation/pages/home_page_tab.dart
 
 import 'dart:ui';
 

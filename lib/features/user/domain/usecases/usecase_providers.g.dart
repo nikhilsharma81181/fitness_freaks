@@ -26,42 +26,6 @@ final getCurrentUserUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetCurrentUserUseCaseRef = AutoDisposeProviderRef<GetCurrentUser>;
-String _$signInUserUseCaseHash() => r'eab7587d868f9a59b6f7f5c876f159ea1c74e521';
-
-/// See also [signInUserUseCase].
-@ProviderFor(signInUserUseCase)
-final signInUserUseCaseProvider = AutoDisposeProvider<SignInUser>.internal(
-  signInUserUseCase,
-  name: r'signInUserUseCaseProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$signInUserUseCaseHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SignInUserUseCaseRef = AutoDisposeProviderRef<SignInUser>;
-String _$signUpUserUseCaseHash() => r'1436c9f25b95c167a3de7dfee3b860da43ce8d26';
-
-/// See also [signUpUserUseCase].
-@ProviderFor(signUpUserUseCase)
-final signUpUserUseCaseProvider = AutoDisposeProvider<SignUpUser>.internal(
-  signUpUserUseCase,
-  name: r'signUpUserUseCaseProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$signUpUserUseCaseHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SignUpUserUseCaseRef = AutoDisposeProviderRef<SignUpUser>;
 String _$signOutUserUseCaseHash() =>
     r'd75e2d7fe40b45555961b74a03c39ecd62a409fc';
 

@@ -1,9 +1,7 @@
 import 'package:fitness_freaks/core/di/providers.dart';
 import 'package:fitness_freaks/features/user/domain/repositories/user_repository.dart';
 import 'package:fitness_freaks/features/user/domain/usecases/get_current_user.dart';
-import 'package:fitness_freaks/features/user/domain/usecases/sign_in_user.dart';
 import 'package:fitness_freaks/features/user/domain/usecases/sign_out_user.dart';
-import 'package:fitness_freaks/features/user/domain/usecases/sign_up_user.dart';
 import 'package:fitness_freaks/features/user/domain/usecases/sign_in_with_google.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -47,26 +45,6 @@ GetCurrentUser getCurrentUserUseCase(GetCurrentUserUseCaseRef ref) {
     throw UnimplementedError('Repository not initialized');
   }
   return GetCurrentUser(repository);
-}
-
-@riverpod
-SignInUser signInUserUseCase(SignInUserUseCaseRef ref) {
-  ref.watch(initializeRepositoryProvider);
-  final repository = ref.watch(userRepositorySyncProvider);
-  if (repository == null) {
-    throw UnimplementedError('Repository not initialized');
-  }
-  return SignInUser(repository);
-}
-
-@riverpod
-SignUpUser signUpUserUseCase(SignUpUserUseCaseRef ref) {
-  ref.watch(initializeRepositoryProvider);
-  final repository = ref.watch(userRepositorySyncProvider);
-  if (repository == null) {
-    throw UnimplementedError('Repository not initialized');
-  }
-  return SignUpUser(repository);
 }
 
 @riverpod

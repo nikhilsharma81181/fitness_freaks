@@ -401,7 +401,6 @@ class _FitnessTabState extends State<FitnessTab>
           children:
               _categories.map((category) {
                 final isSelected = _selectedCategory == category;
-
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: _buildCategoryButton(

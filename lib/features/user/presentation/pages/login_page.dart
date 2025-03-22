@@ -1,5 +1,8 @@
 import 'package:fitness_freaks/core/constant/colors/pallate.dart';
+import 'package:fitness_freaks/core/di/providers.dart';
+import 'package:fitness_freaks/features/user/presentation/providers/auth_provider.dart';
 import 'package:fitness_freaks/features/homepage/presentation/widgets/background_gradient.dart';
+import 'package:fitness_freaks/features/user/presentation/providers/google_auth_provider.dart';
 import 'package:fitness_freaks/features/user/presentation/providers/user_notifier.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -58,21 +61,96 @@ class _LoginPageState extends ConsumerState<LoginPage>
     super.dispose();
   }
 
+  Future<void> _createNewUser() async {
+    try {
+      // Check if the user exists in your backend
+      // If not, create a new user record
+      // This will depend on your user repository implementation
+      final userRepository = await ref.read(userRepositoryProvider.future);
+      await userRepository.createOrUpdateUser();
+    } catch (e) {
+      print('Error creating new user: $e');
+      throw e;
+    }
+  }
+
+  Future<void> _handleSuccessfulLogin() async {
+    // Navigate to the appropriate screen after successful login
+    // For example, you might want to navigate to the home screen
+    Navigator.of(context).pushReplacementNamed('/home');
+  }
+
   Future<void> _signInWithGoogle() async {
     try {
       print('Login page: Starting Google Sign-In');
-      await ref.read(userNotifierProvider.notifier).signInWithGoogle();
-      print('Login page: Google Sign-In completed successfully');
+      // Set loading state
+      setState(() => _isButtonPressed = true);
+
+      // Use the googleAuthNotifierProvider to sign in
+      final result =
+          await ref
+              .read(googleAuthNotifierProvider.notifier)
+              .signInWithGoogle();
+
+      // Handle the result
+      result.fold(
+        (failure) {
+          // Handle failure
+          print('Login page: Google Sign-In failed: ${failure.props}');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Google Sign-In failed: ${failure.props}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        (token) async {
+          // Success - token is the JWT from your backend
+          print('Login page: Google Sign-In succeeded with token');
+
+          // Update Dio with the token
+          ref.read(dioProvider.notifier).updateToken(token);
+
+          // Update auth state
+          ref.read(authProvider.notifier).saveToken(token);
+
+          // Get user data if needed
+          try {
+            await ref.read(userNotifierProvider.notifier).getCurrentUser();
+            print('Login page: User data fetched successfully');
+          } catch (e) {
+            print('Login page: Error fetching user data: $e');
+          }
+
+          // Create user if needed
+          try {
+            await _createNewUser();
+            print('Login page: User created successfully');
+          } catch (e) {
+            print('Login page: Error creating user: $e');
+          }
+
+          // Navigate to appropriate screen
+          if (mounted) {
+            await _handleSuccessfulLogin();
+          }
+        },
+      );
     } catch (e) {
-      print('Login page: Google Sign-In failed: ${e.toString()}');
-      // Consider showing an error message to the user
+      print('Login page: Google Sign-In threw exception: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Google Sign-In failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      // Reset button state
+      if (mounted) {
+        setState(() => _isButtonPressed = false);
       }
     }
   }
@@ -275,7 +353,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
     final textColor =
         isPrimary ? const Color.fromARGB(255, 3, 71, 63) : Colors.white;
 
-    return CupertinoButton(
+    return RawMaterialButton(
       padding: EdgeInsets.zero,
       onPressed:
           isLoading

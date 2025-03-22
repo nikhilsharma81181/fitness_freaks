@@ -26,7 +26,8 @@ class DioNotifier extends StateNotifier<Dio> {
   static Dio _createDio() {
     return Dio(
       BaseOptions(
-        baseUrl: "https://fitness-0j1s.onrender.com",
+        baseUrl:
+            "https://fitness-0j1s.onrender.com", // Make sure this matches your API URL
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
         headers: {
@@ -42,8 +43,10 @@ class DioNotifier extends StateNotifier<Dio> {
       final authService = await ref.read(authServiceProvider.future);
       authService.onAuthStateChanged.listen((user) async {
         if (user != null) {
+          // Get JWT token from shared preferences
           final token = await authService.getToken();
           if (token != null) {
+            // Update DIO headers with JWT token
             updateToken(token);
           }
         } else {
@@ -63,23 +66,37 @@ class DioNotifier extends StateNotifier<Dio> {
   }
 
   void updateToken(String token) {
-    final headers = <String, dynamic>{
-      ...state.options.headers,
-      'Authorization': 'Bearer $token',
-    };
+    try {
+      final headers = <String, dynamic>{
+        ...state.options.headers,
+        'Authorization': 'Bearer $token',
+      };
 
-    final options = state.options.copyWith(headers: headers);
-    state = Dio(options);
-    log("Token updated: ${token.substring(0, 10)}...");
+      final options = state.options.copyWith(headers: headers);
+      state = Dio(options);
+      log(
+        "Token updated in Dio headers: ${token.substring(0, min(10, token.length))}...",
+      );
+    } catch (e) {
+      log("Error updating token: $e");
+    }
   }
 
   void removeToken() {
-    final headers = Map<String, dynamic>.from(state.options.headers);
-    headers.remove('Authorization');
+    try {
+      final headers = Map<String, dynamic>.from(state.options.headers);
+      headers.remove('Authorization');
 
-    final options = state.options.copyWith(headers: headers);
-    state = Dio(options);
-    log("Token removed from Dio headers");
+      final options = state.options.copyWith(headers: headers);
+      state = Dio(options);
+      log("Token removed from Dio headers");
+    } catch (e) {
+      log("Error removing token: $e");
+    }
+  }
+
+  int min(int a, int b) {
+    return a < b ? a : b;
   }
 }
 
@@ -112,6 +129,7 @@ Future<AuthService> authService(AuthServiceRef ref) async {
   return FirebaseAuthService(
     firebaseAuth: ref.watch(firebaseAuthProvider),
     prefs: prefs,
+    dio: ref.watch(dioProvider), // Add Dio here
   );
 }
 

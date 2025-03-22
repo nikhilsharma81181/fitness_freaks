@@ -1,4 +1,3 @@
-// File: lib/ui/common/background_gradient.dart
 import 'package:fitness_freaks/core/constant/colors/pallate.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';

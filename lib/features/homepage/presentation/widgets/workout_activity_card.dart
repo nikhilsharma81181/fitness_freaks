@@ -1,5 +1,3 @@
-// File: lib/features/home/presentation/widgets/workout_activity_card.dart
-
 import 'package:fitness_freaks/core/constant/colors/pallate.dart';
 import 'package:fitness_freaks/features/homepage/presentation/widgets/glass_card.dart';
 import 'package:flutter/material.dart';

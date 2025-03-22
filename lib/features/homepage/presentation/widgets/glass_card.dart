@@ -1,5 +1,3 @@
-// File: lib/features/home/presentation/widgets/enhanced_glass_card.dart
-
 import 'package:fitness_freaks/core/constant/colors/pallate.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';

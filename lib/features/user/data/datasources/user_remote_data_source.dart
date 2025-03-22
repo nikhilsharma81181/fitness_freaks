@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:dio/dio.dart';
+import 'package:fitness_freaks/core/constant/endpoints/endpoints.dart';
 import 'package:fitness_freaks/core/error/exceptions.dart';
 import 'package:fitness_freaks/features/user/data/datasources/auth_service.dart';
 import 'package:fitness_freaks/features/user/data/models/user_model.dart';
@@ -15,18 +17,6 @@ abstract class UserRemoteDataSource {
   /// Throws a [ServerException] for all error codes
   Future<UserModel> updateUser(UserModel user);
 
-  /// Calls the backend API to sign in a user with email and password
-  /// Throws a [ServerException] for all error codes
-  Future<UserModel> signInWithEmailAndPassword(String email, String password);
-
-  /// Calls the backend API to sign up a user with email and password
-  /// Throws a [ServerException] for all error codes
-  Future<UserModel> signUpWithEmailAndPassword(
-    String email,
-    String password,
-    String name,
-  );
-
   /// Calls the backend API to sign out the user
   /// Throws a [ServerException] for all error codes
   Future<void> signOut();
@@ -34,6 +24,10 @@ abstract class UserRemoteDataSource {
   /// Calls the backend API to sign in a user with Google
   /// Throws a [ServerException] for all error codes
   Future<UserModel> signInWithGoogle();
+
+  /// Creates or updates user profile in the backend after authentication
+  /// Throws a [ServerException] for all error codes
+  Future<UserModel> createOrUpdateUser();
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -52,6 +46,7 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   @override
   Future<UserModel> getCurrentUser() async {
     try {
+      log("Token: ${dio.options.headers}");
       // First try to get user from Firebase Auth
       final firebaseUser = await authService.getCurrentUser();
       if (firebaseUser != null) {
@@ -90,112 +85,10 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   }
 
   @override
-  Future<UserModel> signInWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
-    try {
-      // First authenticate with Firebase
-      final firebaseUser = await authService.signInWithEmailPassword(
-        email,
-        password,
-      );
-
-      // Get Firebase token for API auth
-      final token = await authService.getToken();
-      if (token == null) {
-        throw ServerException(message: 'Failed to get authentication token');
-      }
-
-      // Authenticate with backend API and get full user profile
-      try {
-        final response = await dio.post(
-          '/api/auth/login',
-          data: {'email': email, 'password': password},
-        );
-
-        // Save new token if provided
-        if (response.data['token'] != null) {
-          await authService.saveToken(response.data['token']);
-        }
-
-        // Return complete user profile from API
-        if (response.data['user'] != null) {
-          return UserModel.fromJson(response.data['user']);
-        }
-
-        // If API doesn't return user data, throw exception
-        throw ServerException(message: 'Failed to get user profile from API');
-      } catch (e) {
-        // If API call fails, sign out from Firebase to maintain consistency
-        await authService.signOut();
-        throw ServerException(
-          message: 'Failed to authenticate with backend: ${e.toString()}',
-        );
-      }
-    } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException(message: 'Authentication failed: ${e.toString()}');
-    }
-  }
-
-  @override
-  Future<UserModel> signUpWithEmailAndPassword(
-    String email,
-    String password,
-    String name,
-  ) async {
-    try {
-      // First create user with Firebase
-      final firebaseUser = await authService.signUpWithEmailPassword(
-        email,
-        password,
-        name,
-      );
-
-      // Get Firebase token for API auth
-      final token = await authService.getToken();
-      if (token == null) {
-        throw ServerException(message: 'Failed to get authentication token');
-      }
-
-      // Register with backend API and get full user profile
-      try {
-        final response = await dio.post(
-          '/api/auth/register',
-          data: {'email': email, 'password': password, 'name': name},
-        );
-
-        // Save new token if provided
-        if (response.data['token'] != null) {
-          await authService.saveToken(response.data['token']);
-        }
-
-        // Return complete user profile from API
-        if (response.data['user'] != null) {
-          return UserModel.fromJson(response.data['user']);
-        }
-
-        // If API doesn't return user data, throw exception
-        throw ServerException(message: 'Failed to get user profile from API');
-      } catch (e) {
-        // If API call fails, delete Firebase user to maintain consistency
-        await firebaseAuth.currentUser?.delete();
-        await authService.signOut();
-        throw ServerException(
-          message: 'Failed to register with backend: ${e.toString()}',
-        );
-      }
-    } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException(message: 'Registration failed: ${e.toString()}');
-    }
-  }
-
-  @override
   Future<void> signOut() async {
     try {
       await authService.signOut();
+      await googleSignIn.signOut();
       // Also call API logout if needed
       try {
         await dio.post('/api/auth/logout');
@@ -257,46 +150,92 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
         'Successfully signed in to Firebase with Google: ${userCredential.user!.email}',
       );
 
-      // Get token and save it
-      final token = await userCredential.user!.getIdToken();
-      if (token != null) {
-        await authService.saveToken(token);
+      // Get Firebase token
+      final firebaseToken = await userCredential.user!.getIdToken();
+      if (firebaseToken == null) {
+        print('Failed to get Firebase token');
+        throw ServerException(message: 'Failed to get Firebase token');
       }
 
-      // The backend API call can be simplified or temporarily bypassed if it's failing
       try {
-        // You can comment out this API call if your backend isn't set up yet
-        print('Calling backend API for Google auth...');
+        // Exchange Firebase token for JWT from your backend
+        // Use your GoogleSSO endpoint from AuthService
+        print('Exchanging Firebase token for JWT from backend');
+        final tokenExchangeEndpoint = Endpoint.googleSSO;
+
+        // Use the exact same data format as in your other project
         final response = await dio.post(
-          '/api/auth/google',
-          data: {
-            'idToken': googleAuth.idToken,
-            'email': userCredential.user!.email,
-            'name': userCredential.user!.displayName,
-            'photoUrl': userCredential.user!.photoURL,
-          },
+          tokenExchangeEndpoint,
+          data: {"idToken": firebaseToken},
         );
 
-        if (response.data['token'] != null) {
-          await authService.saveToken(response.data['token']);
-        }
+        print('Token exchange response: ${response.data}');
 
-        if (response.data['user'] != null) {
-          print('Successfully got user profile from backend');
-          return UserModel.fromJson(response.data['user']);
+        // Check if the response contains a JWT token
+        if ((response.statusCode == 200 || response.statusCode == 201) &&
+            response.data['token'] != null) {
+          final jwtToken = response.data['token'];
+
+          // Save the JWT token
+          await authService.saveToken(jwtToken);
+
+          print('Saved JWT token from backend');
+
+          // Return user profile from backend if available
+          if (response.data['user'] != null) {
+            print('Using user profile from backend');
+            return UserModel.fromJson(response.data['user']);
+          }
+        } else {
+          print('Invalid response from token exchange: ${response.data}');
+          throw ServerException(
+            message: 'Invalid response from token exchange',
+          );
         }
       } catch (e) {
-        print('Backend API call failed: ${e.toString()}');
-        // Fall back to Firebase user instead of throwing exception
+        print('Error exchanging token: $e');
+        throw ServerException(message: 'Failed to exchange token: $e');
       }
 
-      // If backend API call failed or didn't return user data, use Firebase user
-      print('Using Firebase user profile as fallback');
+      // Fall back to Firebase user if backend token exchange fails
       return UserModel.fromFirebase(userCredential.user!);
     } catch (e) {
       print('Google authentication failed with error: ${e.toString()}');
       throw ServerException(
         message: 'Google authentication failed: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<UserModel> createOrUpdateUser() async {
+    try {
+      // Get the current user from Firebase
+      final firebaseUser = firebaseAuth.currentUser;
+      if (firebaseUser == null) {
+        throw ServerException(message: 'No authenticated user found');
+      }
+
+      // Create user data from Firebase user
+      final userData = UserModel.fromFirebase(firebaseUser);
+
+      // Send user data to backend
+      final response = await dio.post(
+        '/api/user/create-or-update',
+        data: userData.toJson(),
+      );
+
+      // Return user model from API response
+      if (response.data != null) {
+        return UserModel.fromJson(response.data);
+      }
+
+      // If API doesn't return user data, return the Firebase user data
+      return userData;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException(
+        message: 'Failed to create or update user: ${e.toString()}',
       );
     }
   }

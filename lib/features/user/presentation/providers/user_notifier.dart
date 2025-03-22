@@ -3,9 +3,6 @@ import 'dart:async';
 import 'package:fitness_freaks/core/di/providers.dart';
 import 'package:fitness_freaks/features/user/data/models/user_model.dart';
 import 'package:fitness_freaks/features/user/domain/entities/user.dart';
-import 'package:fitness_freaks/features/user/domain/usecases/sign_in_user.dart';
-import 'package:fitness_freaks/features/user/domain/usecases/sign_out_user.dart';
-import 'package:fitness_freaks/features/user/domain/usecases/sign_up_user.dart';
 import 'package:fitness_freaks/features/user/domain/usecases/usecase_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -41,7 +38,9 @@ class UserNotifier extends _$UserNotifier {
 
   @override
   UserState build() {
+    print("UserNotifier: build method called");
     ref.onDispose(() {
+      print("UserNotifier: disposing auth state subscription");
       _authStateSubscription?.cancel();
     });
 
@@ -52,21 +51,27 @@ class UserNotifier extends _$UserNotifier {
 
   void _setupAuthStateListener() async {
     try {
+      print("UserNotifier: Setting up auth state listener");
       // Make sure repository is initialized
       ref.read(initializeRepositoryProvider);
 
       // Get auth service
       final authService = await ref.read(authServiceProvider.future);
+      print("UserNotifier: Got auth service");
 
       // Listen to auth state changes
       _authStateSubscription = authService.onAuthStateChanged.listen(
         (user) {
           if (user != null) {
+            print(
+              "UserNotifier: Auth state changed - user authenticated: ${user.email}",
+            );
             state = state.copyWith(
               status: UserStatus.authenticated,
               user: user,
             );
           } else {
+            print("UserNotifier: Auth state changed - user unauthenticated");
             state = state.copyWith(
               status: UserStatus.unauthenticated,
               user: null,
@@ -74,7 +79,7 @@ class UserNotifier extends _$UserNotifier {
           }
         },
         onError: (error) {
-          print('Auth state listener error: $error');
+          print('UserNotifier: Auth state listener error: $error');
           state = state.copyWith(
             status: UserStatus.error,
             errorMessage: 'Authentication error: $error',
@@ -83,15 +88,26 @@ class UserNotifier extends _$UserNotifier {
       );
 
       // Check current user immediately
+      print("UserNotifier: Checking current user");
       getCurrentUser();
     } catch (e) {
-      print('Error setting up auth state listener: $e');
+      print('UserNotifier: Error setting up auth state listener: $e');
+      state = state.copyWith(
+        status: UserStatus.error,
+        errorMessage: 'Setup error: $e',
+      );
     }
   }
 
   Future<void> getCurrentUser() async {
-    if (state.status == UserStatus.authenticated) return;
+    if (state.status == UserStatus.authenticated) {
+      print(
+        "UserNotifier: User already authenticated, skipping getCurrentUser",
+      );
+      return;
+    }
 
+    print("UserNotifier: Getting current user");
     state = state.copyWith(status: UserStatus.loading);
 
     try {
@@ -99,6 +115,9 @@ class UserNotifier extends _$UserNotifier {
       final userRepositorySync = ref.read(userRepositorySyncProvider);
 
       if (userRepositorySync == null) {
+        print(
+          "UserNotifier: Repository not initialized, setting unauthenticated",
+        );
         state = state.copyWith(status: UserStatus.unauthenticated);
         return;
       }
@@ -107,71 +126,29 @@ class UserNotifier extends _$UserNotifier {
       final result = await useCase.call();
 
       state = result.fold(
-        (failure) => state.copyWith(status: UserStatus.unauthenticated),
-        (user) => state.copyWith(status: UserStatus.authenticated, user: user),
+        (failure) {
+          print("UserNotifier: Failed to get current user: $failure");
+          return state.copyWith(status: UserStatus.unauthenticated);
+        },
+        (user) {
+          print("UserNotifier: Got current user: ${user.email}");
+          return state.copyWith(status: UserStatus.authenticated, user: user);
+        },
       );
     } catch (e) {
-      print('Error getting current user: $e');
+      print('UserNotifier: Error getting current user: $e');
       state = state.copyWith(
         status: UserStatus.unauthenticated,
-        errorMessage: 'Failed to get current user',
-      );
-    }
-  }
-
-  Future<void> signIn(String email, String password) async {
-    state = state.copyWith(status: UserStatus.loading);
-
-    try {
-      final params = SignInUserParams(email: email, password: password);
-      final result = await ref.read(signInUserUseCaseProvider).call(params);
-
-      state = result.fold(
-        (failure) => state.copyWith(
-          status: UserStatus.error,
-          errorMessage: 'Authentication failed',
-        ),
-        (user) => state.copyWith(status: UserStatus.authenticated, user: user),
-      );
-    } catch (e) {
-      state = state.copyWith(
-        status: UserStatus.error,
-        errorMessage: 'Authentication failed: ${e.toString()}',
-      );
-    }
-  }
-
-  Future<void> signUp(String email, String password, String name) async {
-    state = state.copyWith(status: UserStatus.loading);
-
-    try {
-      final params = SignUpUserParams(
-        email: email,
-        password: password,
-        name: name,
-      );
-      final result = await ref.read(signUpUserUseCaseProvider).call(params);
-
-      state = result.fold(
-        (failure) => state.copyWith(
-          status: UserStatus.error,
-          errorMessage: 'Registration failed',
-        ),
-        (user) => state.copyWith(status: UserStatus.authenticated, user: user),
-      );
-    } catch (e) {
-      state = state.copyWith(
-        status: UserStatus.error,
-        errorMessage: 'Registration failed: ${e.toString()}',
+        errorMessage: 'Failed to get current user: $e',
       );
     }
   }
 
   Future<void> signInWithGoogle() async {
+    print('UserNotifier: Starting Google Sign-In');
     state = state.copyWith(status: UserStatus.loading);
 
     try {
-      print('UserNotifier: Starting Google Sign-In');
       final result = await ref.read(signInWithGoogleUseCaseProvider).call();
 
       state = result.fold(
@@ -201,19 +178,37 @@ class UserNotifier extends _$UserNotifier {
   }
 
   Future<void> signOut() async {
+    print("UserNotifier: Signing out");
     state = state.copyWith(status: UserStatus.loading);
 
     try {
-      final result = await ref.read(signOutUserUseCaseProvider).call();
+      final useCase = ref.read(signOutUserUseCaseProvider);
+      if (useCase == null) {
+        print("UserNotifier: SignOutUserUseCase is null");
+        state = state.copyWith(
+          status: UserStatus.error,
+          errorMessage: 'Sign out failed: UseCase is null',
+        );
+        return;
+      }
+
+      final result = await useCase.call();
 
       state = result.fold(
-        (failure) => state.copyWith(
-          status: UserStatus.error,
-          errorMessage: 'Sign out failed',
-        ),
-        (_) => state.copyWith(status: UserStatus.unauthenticated, user: null),
+        (failure) {
+          print("UserNotifier: Sign out failed: $failure");
+          return state.copyWith(
+            status: UserStatus.error,
+            errorMessage: 'Sign out failed',
+          );
+        },
+        (_) {
+          print("UserNotifier: Sign out succeeded");
+          return state.copyWith(status: UserStatus.unauthenticated, user: null);
+        },
       );
     } catch (e) {
+      print("UserNotifier: Sign out threw exception: $e");
       state = state.copyWith(
         status: UserStatus.error,
         errorMessage: 'Sign out failed: ${e.toString()}',

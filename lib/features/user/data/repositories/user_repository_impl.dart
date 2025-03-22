@@ -30,27 +30,6 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<Either<Failure, User>> signInWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
-    return await _performUserAction(
-      () => remoteDataSource.signInWithEmailAndPassword(email, password),
-    );
-  }
-
-  @override
-  Future<Either<Failure, User>> signUpWithEmailAndPassword(
-    String email,
-    String password,
-    String name,
-  ) async {
-    return await _performUserAction(
-      () => remoteDataSource.signUpWithEmailAndPassword(email, password, name),
-    );
-  }
-
-  @override
   Future<Either<Failure, void>> signOut() async {
     try {
       final isConnected = await networkInfo.isConnected;
@@ -70,6 +49,13 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, User>> signInWithGoogle() async {
     return await _performUserAction(() => remoteDataSource.signInWithGoogle());
+  }
+
+  @override
+  Future<Either<Failure, User>> createOrUpdateUser() async {
+    return await _performUserAction(
+      () => remoteDataSource.createOrUpdateUser(),
+    );
   }
 
   Future<Either<Failure, T>> _performUserAction<T>(
