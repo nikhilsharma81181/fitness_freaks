@@ -6,22 +6,6 @@ part of 'providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dioHash() => r'5b5bb0d2f5b770e7ec85b91249bd83dae9ea0a3d';
-
-/// See also [dio].
-@ProviderFor(dio)
-final dioProvider = AutoDisposeProvider<Dio>.internal(
-  dio,
-  name: r'dioProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$dioHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef DioRef = AutoDisposeProviderRef<Dio>;
 String _$networkInfoHash() => r'2bf44e6bdb28d5de63bc0a507b333a33e83758e9';
 
 /// See also [networkInfo].
@@ -57,7 +41,7 @@ final sharedPreferencesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SharedPreferencesRef = AutoDisposeFutureProviderRef<SharedPreferences>;
-String _$firebaseAuthHash() => r'2a8c8cde17aace8d2eb4885d7d9d129cb753713b';
+String _$firebaseAuthHash() => r'697d6826e3463ceacaad1aaa608dfc8508e2ce7f';
 
 /// See also [firebaseAuth].
 @ProviderFor(firebaseAuth)
@@ -93,7 +77,7 @@ final authServiceProvider = AutoDisposeFutureProvider<AuthService>.internal(
 // ignore: unused_element
 typedef AuthServiceRef = AutoDisposeFutureProviderRef<AuthService>;
 String _$userRemoteDataSourceHash() =>
-    r'c7bf2dae1ec0b4020da0631f25f887ecae2c3f9d';
+    r'd7f0ecca80f870307a81bfad4c69152b57d6a5dd';
 
 /// See also [userRemoteDataSource].
 @ProviderFor(userRemoteDataSource)
@@ -132,5 +116,21 @@ final userRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UserRepositoryRef = AutoDisposeFutureProviderRef<UserRepository>;
+String _$googleSignInHash() => r'884f833418a9d06549050cf973f9d2e920f668e8';
+
+/// See also [googleSignIn].
+@ProviderFor(googleSignIn)
+final googleSignInProvider = AutoDisposeProvider<GoogleSignIn>.internal(
+  googleSignIn,
+  name: r'googleSignInProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$googleSignInHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GoogleSignInRef = AutoDisposeProviderRef<GoogleSignIn>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

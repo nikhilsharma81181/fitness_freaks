@@ -14,6 +14,7 @@ abstract class AuthService {
   Future<UserModel?> getCurrentUser();
   Future<String?> getToken();
   Future<void> saveToken(String token);
+  Stream<UserModel?> get onAuthStateChanged;
 }
 
 class FirebaseAuthService implements AuthService {
@@ -25,6 +26,22 @@ class FirebaseAuthService implements AuthService {
     required SharedPreferences prefs,
   }) : _firebaseAuth = firebaseAuth,
        _prefs = prefs;
+
+  @override
+  Stream<UserModel?> get onAuthStateChanged {
+    return _firebaseAuth.authStateChanges().map((firebase_auth.User? user) {
+      if (user != null) {
+        // Get and save token when auth state changes
+        user.getIdToken().then((token) {
+          if (token != null) {
+            saveToken(token);
+          }
+        });
+        return _mapFirebaseUserToUserModel(user);
+      }
+      return null;
+    });
+  }
 
   @override
   Future<UserModel> signInWithEmailPassword(
@@ -113,6 +130,12 @@ class FirebaseAuthService implements AuthService {
       return null;
     }
 
+    // Refresh token
+    final token = await user.getIdToken(true);
+    if (token != null) {
+      await saveToken(token);
+    }
+
     return _mapFirebaseUserToUserModel(user);
   }
 
@@ -123,6 +146,7 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<void> saveToken(String token) async {
+    print("Saving auth token: ${token.substring(0, 10)}...");
     await _prefs.setString('auth_token', token);
   }
 

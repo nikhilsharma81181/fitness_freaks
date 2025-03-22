@@ -59,7 +59,22 @@ class _LoginPageState extends ConsumerState<LoginPage>
   }
 
   Future<void> _signInWithGoogle() async {
-    await ref.read(userNotifierProvider.notifier).signInWithGoogle();
+    try {
+      print('Login page: Starting Google Sign-In');
+      await ref.read(userNotifierProvider.notifier).signInWithGoogle();
+      print('Login page: Google Sign-In completed successfully');
+    } catch (e) {
+      print('Login page: Google Sign-In failed: ${e.toString()}');
+      // Consider showing an error message to the user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google Sign-In failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -299,8 +314,31 @@ class _LoginPageState extends ConsumerState<LoginPage>
                 ),
         child:
             isLoading || _isButtonPressed
-                ? const Center(
-                  child: CupertinoActivityIndicator(color: Colors.white),
+                ? Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CupertinoActivityIndicator(
+                        color:
+                            isPrimary
+                                ? const Color.fromARGB(255, 3, 71, 63)
+                                : Colors.white,
+                        radius: 10,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Signing in...",
+                        style: TextStyle(
+                          color:
+                              isPrimary
+                                  ? const Color.fromARGB(255, 3, 71, 63)
+                                  : Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 )
                 : Row(
                   mainAxisAlignment: MainAxisAlignment.center,

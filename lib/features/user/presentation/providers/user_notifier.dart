@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:fitness_freaks/core/di/providers.dart';
+import 'package:fitness_freaks/features/user/data/models/user_model.dart';
 import 'package:fitness_freaks/features/user/domain/entities/user.dart';
 import 'package:fitness_freaks/features/user/domain/usecases/sign_in_user.dart';
 import 'package:fitness_freaks/features/user/domain/usecases/sign_out_user.dart';
@@ -33,22 +37,61 @@ class UserState {
 
 @riverpod
 class UserNotifier extends _$UserNotifier {
+  StreamSubscription<UserModel?>? _authStateSubscription;
+
   @override
   UserState build() {
-    ref.onDispose(() {});
+    ref.onDispose(() {
+      _authStateSubscription?.cancel();
+    });
 
-    Future.microtask(() => _checkCurrentUser());
+    _setupAuthStateListener();
 
     return UserState.initial();
   }
 
-  Future<void> _checkCurrentUser() async {
-    if (state.status == UserStatus.initial) {
-      await getCurrentUser();
+  void _setupAuthStateListener() async {
+    try {
+      // Make sure repository is initialized
+      ref.read(initializeRepositoryProvider);
+
+      // Get auth service
+      final authService = await ref.read(authServiceProvider.future);
+
+      // Listen to auth state changes
+      _authStateSubscription = authService.onAuthStateChanged.listen(
+        (user) {
+          if (user != null) {
+            state = state.copyWith(
+              status: UserStatus.authenticated,
+              user: user,
+            );
+          } else {
+            state = state.copyWith(
+              status: UserStatus.unauthenticated,
+              user: null,
+            );
+          }
+        },
+        onError: (error) {
+          print('Auth state listener error: $error');
+          state = state.copyWith(
+            status: UserStatus.error,
+            errorMessage: 'Authentication error: $error',
+          );
+        },
+      );
+
+      // Check current user immediately
+      getCurrentUser();
+    } catch (e) {
+      print('Error setting up auth state listener: $e');
     }
   }
 
   Future<void> getCurrentUser() async {
+    if (state.status == UserStatus.authenticated) return;
+
     state = state.copyWith(status: UserStatus.loading);
 
     try {
@@ -68,6 +111,7 @@ class UserNotifier extends _$UserNotifier {
         (user) => state.copyWith(status: UserStatus.authenticated, user: user),
       );
     } catch (e) {
+      print('Error getting current user: $e');
       state = state.copyWith(
         status: UserStatus.unauthenticated,
         errorMessage: 'Failed to get current user',
@@ -127,16 +171,28 @@ class UserNotifier extends _$UserNotifier {
     state = state.copyWith(status: UserStatus.loading);
 
     try {
+      print('UserNotifier: Starting Google Sign-In');
       final result = await ref.read(signInWithGoogleUseCaseProvider).call();
 
       state = result.fold(
-        (failure) => state.copyWith(
-          status: UserStatus.error,
-          errorMessage: 'Google sign-in failed',
-        ),
-        (user) => state.copyWith(status: UserStatus.authenticated, user: user),
+        (failure) {
+          print(
+            'UserNotifier: Google Sign-In failed with failure: ${failure.runtimeType}',
+          );
+          return state.copyWith(
+            status: UserStatus.error,
+            errorMessage: 'Google sign-in failed. Please try again.',
+          );
+        },
+        (user) {
+          print(
+            'UserNotifier: Google Sign-In succeeded for user: ${user.email}',
+          );
+          return state.copyWith(status: UserStatus.authenticated, user: user);
+        },
       );
     } catch (e) {
+      print('UserNotifier: Google Sign-In threw an exception: ${e.toString()}');
       state = state.copyWith(
         status: UserStatus.error,
         errorMessage: 'Google sign-in failed: ${e.toString()}',

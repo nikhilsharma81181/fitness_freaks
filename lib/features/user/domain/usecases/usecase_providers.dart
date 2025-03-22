@@ -15,11 +15,27 @@ final userRepositorySyncProvider = StateProvider<UserRepository?>(
   (ref) => null,
 );
 
-// Use a simple provider for initialization
+// Make sure this provider is properly watched and initialized
 final initializeRepositoryProvider = Provider<void>((ref) {
-  ref.watch(userRepositoryProvider.future).then((repository) {
-    ref.read(userRepositorySyncProvider.notifier).state = repository;
-  });
+  print("Initializing repository provider...");
+
+  // Check if repository is already initialized
+  final currentState = ref.read(userRepositorySyncProvider);
+  if (currentState != null) {
+    print("Repository already initialized");
+    return;
+  }
+
+  // Initialize repository
+  ref
+      .watch(userRepositoryProvider.future)
+      .then((repository) {
+        print("Repository initialized successfully");
+        ref.read(userRepositorySyncProvider.notifier).state = repository;
+      })
+      .catchError((e) {
+        print("Error initializing repository: $e");
+      });
 });
 
 @riverpod
