@@ -1,166 +1,136 @@
-import 'dart:developer';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:fitness_freaks/core/network/network_info.dart';
-import 'package:fitness_freaks/features/user/data/datasources/auth_service.dart';
-import 'package:fitness_freaks/features/user/data/datasources/user_remote_data_source.dart';
-import 'package:fitness_freaks/features/user/data/repositories/user_repository_impl.dart';
-import 'package:fitness_freaks/features/user/domain/repositories/user_repository.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:fitness_freaks/core/constant/endpoints/endpoints.dart'
+    as app_endpoints;
+import 'package:fitness_freaks/core/services/app_initializer.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-part 'providers.g.dart';
+// Use only one endpoints import to avoid conflicts
+// import '../constants/endpoints.dart';
+import '../data/datasources/local/local_storage.dart';
+import '../data/datasources/remote/http_client.dart';
+import '../data/datasources/remote/network_info.dart';
+import '../infrastructure/local_storage/storage_encryption.dart';
+import '../infrastructure/network/dio_client.dart';
+import '../infrastructure/network/network_info_impl.dart';
+import '../infrastructure/services/logger_service.dart';
+import '../storage/utils/secure_storage_helper.dart';
 
-// Network providers
-class DioNotifier extends StateNotifier<Dio> {
-  final Ref ref;
-
-  DioNotifier(this.ref) : super(_createDio()) {
-    _setupAuthListener();
-  }
-
-  static Dio _createDio() {
-    return Dio(
-      BaseOptions(
-        baseUrl:
-            "https://fitness-0j1s.onrender.com", // Make sure this matches your API URL
-        connectTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 3),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-  }
-
-  void _setupAuthListener() async {
-    try {
-      final authService = await ref.read(authServiceProvider.future);
-      authService.onAuthStateChanged.listen((user) async {
-        if (user != null) {
-          // Get JWT token from shared preferences
-          final token = await authService.getToken();
-          if (token != null) {
-            // Update DIO headers with JWT token
-            updateToken(token);
-          }
-        } else {
-          // Remove token when signed out
-          removeToken();
-        }
-      });
-
-      // Check for existing token on initialization
-      final token = await authService.getToken();
-      if (token != null) {
-        updateToken(token);
-      }
-    } catch (e) {
-      log("Error setting up auth listener for Dio: $e");
-    }
-  }
-
-  void updateToken(String token) {
-    try {
-      final headers = <String, dynamic>{
-        ...state.options.headers,
-        'Authorization': 'Bearer $token',
-      };
-
-      final options = state.options.copyWith(headers: headers);
-      state = Dio(options);
-      log(
-        "Token updated in Dio headers: ${token.substring(0, min(10, token.length))}...",
-      );
-    } catch (e) {
-      log("Error updating token: $e");
-    }
-  }
-
-  void removeToken() {
-    try {
-      final headers = Map<String, dynamic>.from(state.options.headers);
-      headers.remove('Authorization');
-
-      final options = state.options.copyWith(headers: headers);
-      state = Dio(options);
-      log("Token removed from Dio headers");
-    } catch (e) {
-      log("Error removing token: $e");
-    }
-  }
-
-  int min(int a, int b) {
-    return a < b ? a : b;
-  }
-}
-
-final dioProvider = StateNotifierProvider<DioNotifier, Dio>((ref) {
-  return DioNotifier(ref);
+/// Provider for SharedPreferences
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  // This uses FutureProvider's .future property to synchronously access the value
+  // Make sure to properly initialize this before app startup
+  throw UnimplementedError(
+      'Initialize in main.dart with ref.read(sharedPreferencesProvider.future)');
 });
 
-@riverpod
-NetworkInfo networkInfo(NetworkInfoRef ref) {
-  return NetworkInfoImpl();
+/// Provider for Connectivity
+final connectivityProvider = Provider<Connectivity>((ref) {
+  return Connectivity();
+});
+
+/// Provider for NetworkInfo
+final networkInfoProvider = Provider<NetworkInfo>((ref) {
+  final connectivity = ref.watch(connectivityProvider);
+  return NetworkInfoImpl(connectivity);
+});
+
+/// Provider for storage encryption
+final storageEncryptionProvider = Provider<StorageEncryption>((ref) {
+  return BasicEncryption();
+});
+
+/// Provider for LocalStorage
+/// This is a placeholder until a proper implementation is added
+final localStorageProvider = Provider<LocalStorage>((ref) {
+  throw UnimplementedError('Storage implementation needs to be added');
+});
+
+/// Legacy DioProvider for backward compatibility
+/// This can be used by existing code until migration to httpClientProvider is complete
+///
+/// IMPORTANT: For new code, please use httpClientProvider instead of dioProvider
+/// This provider is kept for backward compatibility only
+final dioProvider = StateNotifierProvider<DioNotifier, Dio>((ref) {
+  return DioNotifier();
+});
+
+class DioNotifier extends StateNotifier<Dio> {
+  DioNotifier() : super(_createDio());
+
+  static Dio _createDio() {
+    var dio = Dio();
+    dio.options.receiveTimeout = const Duration(seconds: 30);
+    // dio.options.baseUrl = "http://localhost:9090";
+    dio.options.baseUrl = "https://fitness-0j1s.onrender.com";
+
+    // Add default headers
+    SecureStorageHelper.getAuthToken().then((token) {
+      if (token != null) {
+        dio.options.headers['Authorization'] = 'Bearer $token';
+        logger.i('Token added to headers: $token');
+      }
+    });
+
+    return dio;
+  }
+
+  void updateToken({required String newToken}) {
+    if (newToken.isNotEmpty) {
+      state.options.headers['Authorization'] = 'Bearer $newToken';
+      // Also update secure storage
+      SecureStorageHelper.saveAuthToken(newToken);
+    } else {
+      state.options.headers.remove('Authorization');
+      // Clear token from secure storage
+      SecureStorageHelper.deleteAuthToken();
+    }
+  }
 }
 
-// Firebase and Auth providers
-@riverpod
-Future<SharedPreferences> sharedPreferences(SharedPreferencesRef ref) {
-  return SharedPreferences.getInstance();
-}
-
-@riverpod
-firebase_auth.FirebaseAuth firebaseAuth(FirebaseAuthRef ref) {
-  final auth = firebase_auth.FirebaseAuth.instance;
-  // Ensure persistence is set to LOCAL (this is the default, but let's be explicit)
-  auth.setPersistence(firebase_auth.Persistence.LOCAL);
-  return auth;
-}
-
-@riverpod
-Future<AuthService> authService(AuthServiceRef ref) async {
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
-  return FirebaseAuthService(
-    firebaseAuth: ref.watch(firebaseAuthProvider),
-    prefs: prefs,
-    dio: ref.watch(dioProvider), // Add Dio here
+/// Provider for HttpClient
+///
+/// RECOMMENDED: Use this provider for all new network requests
+/// This provides a more structured approach to network requests with better error handling
+final httpClientProvider = Provider<HttpClient>((ref) {
+  return DioClient(
+    baseUrl:
+        "http://localhost:9090", // Use the same baseUrl as in legacy provider
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 15),
+    // TODO: Fix token interceptor after checking the expected type for requestInterceptors
+    requestInterceptors: [],
+    responseInterceptors: [],
+    errorInterceptors: [],
+    logRequests: true, // Consider setting based on environment
   );
-}
+});
 
-// Data sources providers
-@riverpod
-Future<UserRemoteDataSource> userRemoteDataSource(
-  UserRemoteDataSourceRef ref,
-) async {
-  return UserRemoteDataSourceImpl(
-    dio: ref.watch(dioProvider),
-    authService: await ref.watch(authServiceProvider.future),
-    firebaseAuth: ref.watch(firebaseAuthProvider),
-    googleSignIn: ref.watch(googleSignInProvider),
+/// Provider for LoggerService
+final loggerServiceProvider = Provider<LoggerService>((ref) {
+  return const LoggerService(
+    enableVerbose: true, // Consider setting based on environment
+    enableInfo: true,
+    enableWarning: true,
+    enableError: true,
   );
-}
+});
 
-// Repository providers
-@riverpod
-Future<UserRepository> userRepository(UserRepositoryRef ref) async {
-  return UserRepositoryImpl(
-    remoteDataSource: await ref.watch(userRemoteDataSourceProvider.future),
-    networkInfo: ref.watch(networkInfoProvider),
-  );
-}
-
-@riverpod
-GoogleSignIn googleSignIn(GoogleSignInRef ref) {
-  return GoogleSignIn(
-    scopes: ['email', 'profile'],
-    signInOption: SignInOption.standard,
-    // Uncomment and add your web client ID from Firebase console if needed
-    // webClientId: 'YOUR_WEB_CLIENT_ID_HERE',
-  );
-}
+/// MIGRATION GUIDE:
+/// 
+/// To migrate from dioProvider to httpClientProvider:
+/// 
+/// 1. Replace:
+///    final dio = ref.read(dioProvider);
+///    dio.get('/endpoint');
+/// 
+/// 2. With:
+///    final client = ref.read(httpClientProvider);
+///    client.get('/endpoint');
+/// 
+/// 3. For token management, replace:
+///    ref.read(dioProvider.notifier).updateToken('token');
+/// 
+/// 4. With:
+///    ref.read(httpClientProvider).updateToken('token');

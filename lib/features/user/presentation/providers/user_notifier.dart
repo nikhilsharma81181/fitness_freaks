@@ -1,218 +1,159 @@
-import 'dart:async';
-
-import 'package:fitness_freaks/core/di/providers.dart';
-import 'package:fitness_freaks/features/user/data/models/user_model.dart';
-import 'package:fitness_freaks/features/user/domain/entities/user.dart';
-import 'package:fitness_freaks/features/user/domain/usecases/usecase_providers.dart';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-part 'user_notifier.g.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/usecase/usecase.dart';
+import '../../domain/entities/user.dart';
+import '../../domain/usecases/create_user.dart';
+import '../../domain/usecases/delete_user.dart';
+import '../../domain/usecases/get_user.dart';
+import '../../domain/usecases/update_user.dart';
+import '../../domain/usecases/upload_profile_picture.dart';
+import 'user_state.dart';
 
-enum UserStatus { initial, loading, authenticated, unauthenticated, error }
-
-@immutable
-class UserState {
-  final UserStatus status;
-  final User? user;
-  final String? errorMessage;
-
-  const UserState({required this.status, this.user, this.errorMessage});
-
-  factory UserState.initial() {
-    return const UserState(status: UserStatus.initial);
-  }
-
-  UserState copyWith({UserStatus? status, User? user, String? errorMessage}) {
-    return UserState(
-      status: status ?? this.status,
-      user: user ?? this.user,
-      errorMessage: errorMessage ?? this.errorMessage,
+/// Notifier for user-related operations
+class UserNotifier extends StateNotifier<UserState> {
+  final CreateUser _createUser;
+  final GetUser _getUser;
+  final UpdateUser _updateUser;
+  final UploadProfilePicture _uploadProfilePicture;
+  final DeleteUser _deleteUser;
+  
+  UserNotifier({
+    required CreateUser createUser,
+    required GetUser getUser,
+    required UpdateUser updateUser,
+    required UploadProfilePicture uploadProfilePicture,
+    required DeleteUser deleteUser,
+  })  : _createUser = createUser,
+        _getUser = getUser,
+        _updateUser = updateUser,
+        _uploadProfilePicture = uploadProfilePicture,
+        _deleteUser = deleteUser,
+        super(UserState.initial());
+  
+  /// Create a new user
+  Future<void> createUser(UserEntity user) async {
+    state = UserState.loading();
+    
+    final result = await _createUser(user);
+    
+    state = result.fold(
+      (failure) => UserState.error(_mapFailureToMessage(failure)),
+      (user) => UserState.success(user),
     );
   }
-}
-
-@riverpod
-class UserNotifier extends _$UserNotifier {
-  StreamSubscription<UserModel?>? _authStateSubscription;
-
-  @override
-  UserState build() {
-    print("UserNotifier: build method called");
-    ref.onDispose(() {
-      print("UserNotifier: disposing auth state subscription");
-      _authStateSubscription?.cancel();
-    });
-
-    _setupAuthStateListener();
-
-    return UserState.initial();
-  }
-
-  void _setupAuthStateListener() async {
-    try {
-      print("UserNotifier: Setting up auth state listener");
-      // Make sure repository is initialized
-      ref.read(initializeRepositoryProvider);
-
-      // Get auth service
-      final authService = await ref.read(authServiceProvider.future);
-      print("UserNotifier: Got auth service");
-
-      // Listen to auth state changes
-      _authStateSubscription = authService.onAuthStateChanged.listen(
-        (user) {
-          if (user != null) {
-            print(
-              "UserNotifier: Auth state changed - user authenticated: ${user.email}",
-            );
-            state = state.copyWith(
-              status: UserStatus.authenticated,
-              user: user,
-            );
-          } else {
-            print("UserNotifier: Auth state changed - user unauthenticated");
-            state = state.copyWith(
-              status: UserStatus.unauthenticated,
-              user: null,
-            );
-          }
-        },
-        onError: (error) {
-          print('UserNotifier: Auth state listener error: $error');
-          state = state.copyWith(
-            status: UserStatus.error,
-            errorMessage: 'Authentication error: $error',
-          );
-        },
-      );
-
-      // Check current user immediately
-      print("UserNotifier: Checking current user");
-      getCurrentUser();
-    } catch (e) {
-      print('UserNotifier: Error setting up auth state listener: $e');
-      state = state.copyWith(
-        status: UserStatus.error,
-        errorMessage: 'Setup error: $e',
-      );
-    }
-  }
-
-  Future<void> getCurrentUser() async {
-    if (state.status == UserStatus.authenticated) {
-      print(
-        "UserNotifier: User already authenticated, skipping getCurrentUser",
-      );
+  
+  // Track if a request is already in progress to prevent duplicate calls
+  bool _isRequestInProgress = false;
+  
+  /// Get current user
+  Future<void> getUser() async {
+    // Prevent multiple simultaneous calls
+    if (_isRequestInProgress) {
       return;
     }
-
-    print("UserNotifier: Getting current user");
-    state = state.copyWith(status: UserStatus.loading);
-
+    
+    _isRequestInProgress = true;
+    
     try {
-      ref.read(initializeRepositoryProvider);
-      final userRepositorySync = ref.read(userRepositorySyncProvider);
-
-      if (userRepositorySync == null) {
-        print(
-          "UserNotifier: Repository not initialized, setting unauthenticated",
-        );
-        state = state.copyWith(status: UserStatus.unauthenticated);
-        return;
-      }
-
-      final useCase = ref.read(getCurrentUserUseCaseProvider);
-      final result = await useCase.call();
-
+      state = state.copyWith(status: UserStatus.loading);
+      
+      final result = await _getUser(NoParams());
+      
       state = result.fold(
         (failure) {
-          print("UserNotifier: Failed to get current user: $failure");
-          return state.copyWith(status: UserStatus.unauthenticated);
+          if (failure is ConnectionFailure && state.user != null) {
+            return UserState.offline(state.user!);
+          }
+          return UserState.error(_mapFailureToMessage(failure));
         },
-        (user) {
-          print("UserNotifier: Got current user: ${user.email}");
-          return state.copyWith(status: UserStatus.authenticated, user: user);
-        },
+        (user) => UserState.success(user),
       );
     } catch (e) {
-      print('UserNotifier: Error getting current user: $e');
-      state = state.copyWith(
-        status: UserStatus.unauthenticated,
-        errorMessage: 'Failed to get current user: $e',
-      );
+      debugPrint('Error in getUser: $e');
+      
+      // Don't update state to error if we already have user data
+      if (state.user == null) {
+        state = UserState.error('Failed to load user: $e');
+      } else {
+        state = state.copyWith(status: UserStatus.success);
+      }
+    } finally {
+      _isRequestInProgress = false;
     }
   }
-
-  Future<void> signInWithGoogle() async {
-    print('UserNotifier: Starting Google Sign-In');
+  
+  /// Update user
+  Future<void> updateUser(UserEntity user) async {
     state = state.copyWith(status: UserStatus.loading);
-
-    try {
-      final result = await ref.read(signInWithGoogleUseCaseProvider).call();
-
-      state = result.fold(
-        (failure) {
-          print(
-            'UserNotifier: Google Sign-In failed with failure: ${failure.runtimeType}',
-          );
-          return state.copyWith(
-            status: UserStatus.error,
-            errorMessage: 'Google sign-in failed. Please try again.',
-          );
-        },
-        (user) {
-          print(
-            'UserNotifier: Google Sign-In succeeded for user: ${user.email}',
-          );
-          return state.copyWith(status: UserStatus.authenticated, user: user);
-        },
-      );
-    } catch (e) {
-      print('UserNotifier: Google Sign-In threw an exception: ${e.toString()}');
-      state = state.copyWith(
-        status: UserStatus.error,
-        errorMessage: 'Google sign-in failed: ${e.toString()}',
-      );
-    }
+    
+    final result = await _updateUser(user);
+    
+    state = result.fold(
+      (failure) {
+        if (failure is ConnectionFailure && state.user != null) {
+          return UserState.offline(state.user!);
+        }
+        return UserState.error(_mapFailureToMessage(failure));
+      },
+      (user) => UserState.success(user),
+    );
   }
-
-  Future<void> signOut() async {
-    print("UserNotifier: Signing out");
+  
+  /// Upload profile picture
+  Future<void> uploadProfilePicture(File file) async {
     state = state.copyWith(status: UserStatus.loading);
-
-    try {
-      final useCase = ref.read(signOutUserUseCaseProvider);
-      if (useCase == null) {
-        print("UserNotifier: SignOutUserUseCase is null");
-        state = state.copyWith(
-          status: UserStatus.error,
-          errorMessage: 'Sign out failed: UseCase is null',
-        );
-        return;
-      }
-
-      final result = await useCase.call();
-
-      state = result.fold(
-        (failure) {
-          print("UserNotifier: Sign out failed: $failure");
-          return state.copyWith(
-            status: UserStatus.error,
-            errorMessage: 'Sign out failed',
-          );
-        },
-        (_) {
-          print("UserNotifier: Sign out succeeded");
-          return state.copyWith(status: UserStatus.unauthenticated, user: null);
-        },
-      );
-    } catch (e) {
-      print("UserNotifier: Sign out threw exception: $e");
-      state = state.copyWith(
-        status: UserStatus.error,
-        errorMessage: 'Sign out failed: ${e.toString()}',
-      );
+    
+    final result = await _uploadProfilePicture(file);
+    
+    state = result.fold(
+      (failure) => UserState.error(_mapFailureToMessage(failure)),
+      (user) => UserState.success(user),
+    );
+  }
+  
+  /// Delete user
+  Future<void> deleteUser() async {
+    state = state.copyWith(status: UserStatus.loading);
+    
+    final result = await _deleteUser(NoParams());
+    
+    state = result.fold(
+      (failure) => UserState.error(_mapFailureToMessage(failure)),
+      (_) => UserState.initial(),
+    );
+  }
+  
+  /// Reset state to initial
+  void reset() {
+    state = UserState.initial();
+  }
+  
+  /// Map failure to user-friendly message
+  String _mapFailureToMessage(Failure failure) {
+    debugPrint('Failure: ${failure.runtimeType} - ${failure.message}');
+    
+    switch (failure.runtimeType) {
+      case ServerFailure:
+        return failure.message;
+      case ConnectionFailure:
+        return 'No internet connection. Please check your connection.';
+      case CacheFailure:
+        return 'Cache error. Please try again.';
+      case AuthFailure:
+        final authFailure = failure as AuthFailure;
+        switch (authFailure.type) {
+          case AuthFailureType.unauthorized:
+            return 'You are not authorized to perform this action.';
+          case AuthFailureType.userNotFound:
+            return 'User not found.';
+          default:
+            return authFailure.message;
+        }
+      default:
+        return 'An unexpected error occurred. Please try again.';
     }
   }
 }

@@ -1,20 +1,23 @@
-import 'package:fitness_freaks/core/error/failures.dart';
-import 'package:fitness_freaks/features/user/domain/entities/user.dart';
+import 'dart:io';
 import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/error/failures.dart';
+import '../entities/user.dart';
+
+/// Repository interface for user operations
 abstract class UserRepository {
-  /// Gets the current user profile
-  Future<Either<Failure, User>> getCurrentUser();
-
-  /// Updates the user profile
-  Future<Either<Failure, User>> updateUser(User user);
-
-  /// Signs user out
-  Future<Either<Failure, void>> signOut();
-
-  /// Signs user in with Google
-  Future<Either<Failure, User>> signInWithGoogle();
-
-  /// Creates or updates user profile after authentication
-  Future<Either<Failure, User>> createOrUpdateUser();
+  /// Create a new user
+  Future<Either<Failure, UserEntity>> createUser(UserEntity user);
+  
+  /// Get current user
+  Future<Either<Failure, UserEntity>> getUser();
+  
+  /// Update user
+  Future<Either<Failure, UserEntity>> updateUser(UserEntity user);
+  
+  /// Upload profile picture
+  Future<Either<Failure, UserEntity>> uploadProfilePicture(File imageFile);
+  
+  /// Delete user
+  Future<Either<Failure, void>> deleteUser();
 }

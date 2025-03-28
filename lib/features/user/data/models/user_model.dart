@@ -1,71 +1,103 @@
-import 'package:fitness_freaks/features/user/domain/entities/user.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'dart:developer' as developer;
 
-class UserModel extends User {
-  const UserModel({
-    required String id,
-    required String name,
-    required String email,
-    required String profileImageUrl,
-    required int fitnessLevel,
-    required List<String> goals,
-  }) : super(
-         id: id,
-         name: name,
-         email: email,
-         profileImageUrl: profileImageUrl,
-         fitnessLevel: fitnessLevel,
-         goals: goals,
-       );
+import '../../domain/entities/user.dart';
 
+/// User model for data layer operations
+class UserModel extends UserEntity {
+  UserModel({
+    super.fullName,
+    super.address,
+    super.country,
+    super.profilePhoto,
+    super.email,
+    super.phoneNumber,
+    super.dateOfBirth,
+    super.gender,
+    super.isActive,
+  }) {
+    developer.log("Creating UserModel instance. Date of birth: $dateOfBirth");
+  }
+  
+  /// Create from JSON
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'],
-      name: json['name'],
+    developer.log("Creating UserModel from JSON: $json");
+    
+    Gender? gender;
+    if (json['gender'] != null) {
+      try {
+        gender = Gender.values.firstWhere(
+          (e) => e.toString() == 'Gender.${json['gender']}',
+        );
+      } catch (e) {
+        developer.log('Error parsing gender: $e');
+      }
+    }
+    
+    final model = UserModel(
+      fullName: json['fullName'],
+      address: json['address'],
+      country: json['country'],
+      profilePhoto: json['profilePhoto'],
       email: json['email'],
-      profileImageUrl: json['profile_image_url'] ?? '',
-      fitnessLevel: json['fitness_level'] ?? 1,
-      goals: List<String>.from(json['goals'] ?? []),
+      phoneNumber: json['phoneNumber'],
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.parse(json['dateOfBirth'])
+          : null,
+      gender: gender,
+      isActive: json['isActive'] ?? true,
     );
+    
+    developer.log("Created UserModel. Date of birth: ${model.dateOfBirth}");
+    
+    return model;
   }
-
-  factory UserModel.fromFirebase(firebase_auth.User firebaseUser) {
-    return UserModel(
-      id: firebaseUser.uid,
-      name: firebaseUser.displayName ?? 'New User',
-      email: firebaseUser.email ?? '',
-      profileImageUrl: firebaseUser.photoURL ?? '',
-      fitnessLevel: 1, // Default value
-      goals: [], // Default empty goals
-    );
-  }
-
+  
+  /// Convert to JSON
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
+    developer.log("Converting UserModel to JSON. Date of birth: $dateOfBirth");
+    
+    final json = {
+      'fullName': fullName,
+      'address': address,
+      'country': country,
+      'profilePhoto': profilePhoto,
       'email': email,
-      'profile_image_url': profileImageUrl,
-      'fitness_level': fitnessLevel,
-      'goals': goals,
+      'phoneNumber': phoneNumber,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'gender': gender?.toString().split('.').last,
+      'isActive': isActive,
     };
+    
+    // Remove null values
+    json.removeWhere((key, value) => value == null);
+    
+    developer.log("Final JSON: $json");
+    
+    return json;
   }
-
+  
+  /// Create a copy of this model with updated fields
   UserModel copyWith({
-    String? id,
-    String? name,
+    String? fullName,
+    String? address,
+    String? country,
+    String? profilePhoto,
     String? email,
-    String? profileImageUrl,
-    int? fitnessLevel,
-    List<String>? goals,
+    String? phoneNumber,
+    DateTime? dateOfBirth,
+    Gender? gender,
+    bool? isActive,
   }) {
     return UserModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
+      fullName: fullName ?? this.fullName,
+      address: address ?? this.address,
+      country: country ?? this.country,
+      profilePhoto: profilePhoto ?? this.profilePhoto,
       email: email ?? this.email,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
-      fitnessLevel: fitnessLevel ?? this.fitnessLevel,
-      goals: goals ?? this.goals,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

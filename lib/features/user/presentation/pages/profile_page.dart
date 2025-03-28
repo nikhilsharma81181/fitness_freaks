@@ -1,352 +1,391 @@
-// File: lib/features/user/presentation/pages/profile_page.dart
-import 'package:fitness_freaks/core/constant/colors/pallate.dart';
-import 'package:fitness_freaks/features/homepage/presentation/widgets/background_gradient.dart';
-import 'package:fitness_freaks/features/user/presentation/pages/login_page.dart';
-import 'package:fitness_freaks/features/user/presentation/pages/user_profile_provider.dart';
-import 'package:fitness_freaks/features/user/presentation/providers/user_notifier.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-class ProfilePage extends ConsumerWidget {
-  const ProfilePage({super.key});
+import '../../domain/entities/user.dart';
+import '../providers/user_providers.dart';
+import '../providers/user_state.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
+
+class ProfilePage extends HookConsumerWidget {
+  const ProfilePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userNotifierProvider);
-    final isAuthenticated = userState.status == UserStatus.authenticated;
+    final user = userState.user;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const EditProfilePage(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _handleSignOut(context, ref),
+          ),
+        ],
+      ),
+      body: userState.status == UserStatus.loading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildProfileContent(context, user, userState),
+    );
+  }
 
-    // Debug prints
-    print('ProfilePage build - isAuthenticated: $isAuthenticated');
-    print('ProfilePage build - user: ${userState.user?.email}');
-    print('ProfilePage build - status: ${userState.status}');
+  Widget _buildProfileContent(
+    BuildContext context,
+    UserEntity? user,
+    UserState userState,
+  ) {
+    if (userState.status == UserStatus.error) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Error: ${userState.errorMessage}',
+              style: const TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // Retry loading user
+                final userNotifier = ProviderScope.containerOf(context)
+                    .read(userNotifierProvider.notifier);
+                userNotifier.getUser();
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (user == null) {
+      return const Center(
+        child: Text('No user data available'),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Profile picture
+          _buildProfilePicture(context, user),
+          const SizedBox(height: 24),
+
+          // User name
+          Text(
+            user.fullName ?? 'No Name',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Offline indicator
+          if (userState.isOffline)
+            const Chip(
+              label: Text('Offline'),
+              backgroundColor: Colors.orange,
+              labelStyle: TextStyle(color: Colors.white),
+            ),
+          const SizedBox(height: 24),
+
+          // User info
+          _buildInfoCard('Email', user.email ?? 'Not provided'),
+          _buildInfoCard('Phone', user.phoneNumber ?? 'Not provided'),
+          _buildInfoCard('Address', user.address ?? 'Not provided'),
+          _buildInfoCard('Country', user.country ?? 'Not provided'),
+          _buildInfoCard(
+            'Date of Birth',
+            user.dateOfBirth != null
+                ? '${user.dateOfBirth!.day}/${user.dateOfBirth!.month}/${user.dateOfBirth!.year}'
+                : 'Not provided',
+          ),
+          _buildInfoCard(
+            'Gender',
+            user.gender != null
+                ? user.gender.toString().split('.').last
+                : 'Not provided',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfilePicture(BuildContext context, UserEntity user) {
+    final hasProfilePic = user.profilePhoto != null &&
+        user.profilePhoto!.isNotEmpty;
 
     return Stack(
       children: [
-        // Background gradient
-        const Positioned.fill(
-          child: BackgroundGradient(tabType: TabType.profile),
+        CircleAvatar(
+          radius: 50,
+          backgroundColor: Colors.grey[300],
+          backgroundImage: hasProfilePic
+              ? NetworkImage(user.profilePhoto!)
+              : null,
+          child: !hasProfilePic
+              ? const Icon(Icons.person, size: 50, color: Colors.grey)
+              : null,
         ),
-
-        // Content
-        SafeArea(
-          bottom:
-              false, // Important: don't include bottom safe area because of tab bar
-          child:
-              isAuthenticated
-                  ? _buildAuthenticatedContent(context, ref)
-                  : _buildUnauthenticatedContent(context),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.camera_alt, color: Colors.white),
+              onPressed: () => _updateProfilePicture(context),
+              constraints: const BoxConstraints(
+                minHeight: 36,
+                minWidth: 36,
+              ),
+              iconSize: 18,
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildAuthenticatedContent(BuildContext context, WidgetRef ref) {
-    // Watch the profile provider for server data
-    final profileState = ref.watch(userProfileNotifierProvider);
-
-    // Calculate bottom padding to account for tab bar
-    final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
-
-    // Show loading indicator while fetching profile
-    if (profileState.status == ProfileStatus.loading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildInfoCard(String label, String value) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
           children: [
-            const CupertinoActivityIndicator(),
-            const SizedBox(height: 20),
             Text(
-              "Loading profile data...",
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Show error if profile fetch failed
-    if (profileState.status == ProfileStatus.error) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              CupertinoIcons.exclamationmark_circle,
-              color: Colors.red,
-              size: 48,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Failed to load profile",
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              profileState.errorMessage ?? "Unknown error",
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            RawMaterialButton(
-              fillColor: Pallate.accentGreen,
-              onPressed: () {
-                // Retry profile fetch
-                ref.read(userProfileNotifierProvider.notifier).refreshProfile();
-              },
-              child: const Text("Retry"),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Get user data from the profile provider (server data)
-    final userData = profileState.userData;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        children: [
-          // Profile header
-          Row(
-            children: [
-              // Profile image - Use profile image URL if available
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Pallate.accentGreen, width: 2),
-                  image:
-                      userData?.profileImageUrl != null &&
-                              userData!.profileImageUrl.isNotEmpty
-                          ? DecorationImage(
-                            image: NetworkImage(userData.profileImageUrl),
-                            fit: BoxFit.cover,
-                          )
-                          : null,
-                ),
-                child:
-                    userData?.profileImageUrl == null ||
-                            userData!.profileImageUrl.isEmpty
-                        ? const Center(
-                          child: Icon(
-                            CupertinoIcons.person_fill,
-                            size: 40,
-                            color: Pallate.accentGreen,
-                          ),
-                        )
-                        : null,
-              ),
-              const SizedBox(width: 16),
-              // User info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userData?.name.isEmpty == true
-                          ? 'User'
-                          : userData?.name ?? 'User',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      userData?.email ?? '',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (userData?.fitnessLevel != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.star_fill,
-                            size: 14,
-                            color: Pallate.accentGreen,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Level ${userData!.fitnessLevel}",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.7),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 40),
-
-          // Settings/options
-          _buildSettingsItem(
-            icon: CupertinoIcons.person,
-            title: 'Edit Profile',
-            onTap: () {},
-          ),
-          _buildSettingsItem(
-            icon: CupertinoIcons.bell,
-            title: 'Notifications',
-            onTap: () {},
-          ),
-          _buildSettingsItem(
-            icon: CupertinoIcons.settings,
-            title: 'Settings',
-            onTap: () {},
-          ),
-          _buildSettingsItem(
-            icon: CupertinoIcons.question_circle,
-            title: 'Help & Support',
-            onTap: () {},
-          ),
-
-          // Use Expanded instead of Spacer to better control layout
-          Padding(
-            padding: EdgeInsets.only(bottom: bottomPadding),
-            child: _buildLogoutButton(ref),
-          ),
-          Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton(WidgetRef ref) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
-      child: RawMaterialButton(
-        padding: EdgeInsets.zero,
-        onPressed: () async {
-          print('Logout button pressed');
-          try {
-            await ref.read(userNotifierProvider.notifier).signOut();
-            print('Logout succeeded');
-          } catch (e) {
-            print('Logout failed: $e');
-          }
-        },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.red),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(
-            child: Text(
-              'Logout',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
-          ),
+            const Spacer(),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildUnauthenticatedContent(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            CupertinoIcons.person_fill,
-            color: Pallate.profileGradient1,
-            size: 64,
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Profile',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Sign in to access your profile',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.white.withOpacity(0.7),
-            ),
-          ),
-          const SizedBox(height: 32),
-          Container(
-            width: double.infinity,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Pallate.accentGreen,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: RawMaterialButton(
-              fillColor: Pallate.accentGreen,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(builder: (context) => const LoginPage()),
+  Future<void> _updateProfilePicture(BuildContext context) async {
+    final imagePicker = ImagePicker();
+    final pickedFile = await imagePicker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final userNotifier =
+          ProviderScope.containerOf(context).read(userNotifierProvider.notifier);
+      await userNotifier.uploadProfilePicture(File(pickedFile.path));
+    }
+  }
+
+  Future<void> _handleSignOut(BuildContext context, WidgetRef ref) async {
+    final success = await ref.read(authNotifierProvider.notifier).signOut();
+    
+    if (success) {
+      // Reset user state
+      ref.read(userNotifierProvider.notifier).reset();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to sign out')),
+      );
+    }
+  }
+}
+
+/// Page for editing user profile
+class EditProfilePage extends HookConsumerWidget {
+  const EditProfilePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userState = ref.watch(userNotifierProvider);
+    final user = userState.user;
+    
+    // Create the form key
+    final _formKey = GlobalKey<FormState>();
+    
+    // Form controllers
+    final nameController = TextEditingController(text: user?.fullName);
+    final emailController = TextEditingController(text: user?.email);
+    final phoneController = TextEditingController(text: user?.phoneNumber);
+    final addressController = TextEditingController(text: user?.address);
+    final countryController = TextEditingController(text: user?.country);
+    
+    // Selected gender
+    Gender? selectedGender = user?.gender;
+    
+    // Selected date of birth
+    DateTime? selectedDate = user?.dateOfBirth;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Profile'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                // Update user
+                final updatedUser = user?.copyWith(
+                  fullName: nameController.text,
+                  email: emailController.text,
+                  phoneNumber: phoneController.text,
+                  address: addressController.text,
+                  country: countryController.text,
+                  gender: selectedGender,
+                  dateOfBirth: selectedDate,
                 );
-              },
-              child: const Text('Sign In or Create Account'),
+                
+                if (updatedUser != null) {
+                  await ref.read(userNotifierProvider.notifier).updateUser(updatedUser);
+                  Navigator.of(context).pop();
+                }
+              }
+            },
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSettingsItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque, // Fix for mouse pointer issues
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
             children: [
-              Icon(icon, color: Colors.white, size: 20),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 16, color: Colors.white),
+              // Name
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your name';
+                  }
+                  return null;
+                },
               ),
-              const Spacer(),
-              const Icon(
-                CupertinoIcons.chevron_right,
-                color: Colors.white,
-                size: 18,
+              const SizedBox(height: 16),
+              
+              // Email
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+              
+              // Phone
+              TextFormField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              
+              // Address
+              TextFormField(
+                controller: addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Address',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Country
+              TextFormField(
+                controller: countryController,
+                decoration: const InputDecoration(
+                  labelText: 'Country',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Gender selection
+              DropdownButtonFormField<Gender>(
+                value: selectedGender,
+                decoration: const InputDecoration(
+                  labelText: 'Gender',
+                  border: OutlineInputBorder(),
+                ),
+                items: Gender.values.map((gender) {
+                  return DropdownMenuItem(
+                    value: gender,
+                    child: Text(gender.toString().split('.').last),
+                  );
+                }).toList(),
+                onChanged: (Gender? value) {
+                  selectedGender = value;
+                },
+              ),
+              const SizedBox(height: 16),
+              
+              // Date of birth
+              GestureDetector(
+                onTap: () async {
+                  final pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate ?? DateTime.now(),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                  );
+                  
+                  if (pickedDate != null) {
+                    selectedDate = pickedDate;
+                  }
+                },
+                child: AbsorbPointer(
+                  child: TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Date of Birth',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    controller: TextEditingController(
+                      text: selectedDate != null
+                          ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                          : '',
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

@@ -12,12 +12,8 @@ android {
     namespace = "com.fitnessfreaks.fitness_freaks"
     compileSdk = flutter.compileSdkVersion
     
-    // If Flutter's NDK version causes problems, use the NDK from gradle.properties
-    // or fall back to a sensible default
-    ndkVersion = project.findProperty("android.ndkVersion")?.toString()
-        ?: flutter.ndkVersion
-        ?: "21.4.7075529"
-
+    // Set NDK version to match plugin requirements
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
