@@ -142,12 +142,12 @@ class WorkoutProgressCard extends StatelessWidget {
       height: 64,
       decoration: BoxDecoration(
         color: isActive
-            ? AppColors.accent1.withOpacity(0.25)
+            ? AppColors.vibrantMint.withOpacity(0.25)
             : Colors.black.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive
-              ? AppColors.accent1.withOpacity(0.7)
+              ? AppColors.vibrantMint.withOpacity(0.7)
               : Colors.transparent,
           width: 1.5,
         ),

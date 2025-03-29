@@ -13,9 +13,15 @@ class AppColors {
   static const secondaryDark = Color(0xFFC66900);
 
   // Accent colors for different purposes
-  static const accent1 = Color(0xFF00BCD4);
+  // static const accent1 = Color(0xFF00BCD4);
+  static const accent1 = Color(0xFF00e5b3);
   static const accent2 = Color(0xFF8BC34A);
   static const accent3 = Color(0xFFE91E63);
+
+    // Vibrant mint/teal for gradients
+  static const Color vibrantMint = Color(0xFF00e5b3);
+  static const Color vibrantTeal = Color(0xFF00bfcc);
+
 
   // Text colors
   static const textPrimary = Color(0xFF212121);

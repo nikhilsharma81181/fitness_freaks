@@ -70,8 +70,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Fitness AI',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
+      theme: ThemeData.dark(),
+      darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
       home: const AuthWrapper(),
     );
