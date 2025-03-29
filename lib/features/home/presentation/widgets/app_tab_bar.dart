@@ -5,7 +5,7 @@ import 'package:fitness_freaks/core/constants/colors.dart';
 class AppTabBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onTap;
-  
+
   const AppTabBar({
     Key? key,
     required this.selectedIndex,
@@ -63,7 +63,7 @@ class AppTabBar extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildTabItem({
     required IconData icon,
     required String label,
@@ -71,8 +71,9 @@ class AppTabBar extends StatelessWidget {
   }) {
     final isSelected = selectedIndex == index;
     final color = isSelected ? AppColors.accent1 : Colors.white60;
-    final bgColor = isSelected ? AppColors.accent1.withOpacity(0.15) : Colors.transparent;
-    
+    final bgColor =
+        isSelected ? AppColors.accent1.withOpacity(0.15) : Colors.transparent;
+
     return InkWell(
       onTap: () => onTap(index),
       borderRadius: BorderRadius.circular(12),

@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:isolate';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../../core/constants/colors.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -61,7 +63,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       body: Stack(
         children: [
           // Background gradient
-          const BackgroundGradient(forTab: TabType.profile),
+          const BackgroundGradient(),
 
           // Content
           SafeArea(
@@ -308,41 +310,68 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: source,
-      maxWidth: 1080,
-      maxHeight: 1080,
-      imageQuality: 90,
+      // Don't specify compression params here, we'll do it in isolate
+      // maxWidth: 1080,
+      // maxHeight: 1080,
+      // imageQuality: 90,
     );
 
     if (pickedFile != null) {
-      // Show processing indicator
+      // Show loading indicator
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Processing image...')));
 
-      // Use compute to process image in a separate isolate
-      try {
-        final file = File(pickedFile.path);
+      final file = File(pickedFile.path);
 
-        // Process image in background using compute
-        await compute<File, File>(_processImageFile, file)
-            .then((processedFile) {
-          // Upload profile picture with processed file
-          ref
-              .read(userNotifierProvider.notifier)
-              .uploadProfilePicture(processedFile);
+      try {
+        // Compress image in an isolate to avoid UI freezes
+        final compressedFile = await compute(_compressImage, {
+          'path': file.path,
+          'maxWidth': 1080,
+          'maxHeight': 1080,
+          'quality': 90
         });
-      } catch (e) {
+
+        // Upload the compressed file
+        // ref.read(userNotifierProvider.notifier).uploadProfilePicture(compressedFile);
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error processing image: $e')));
+            const SnackBar(content: Text('Image processed successfully')));
+      } catch (e) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error processing image: ${e.toString()}')));
       }
     }
   }
 
-  // Static method to run in isolate
-  static File _processImageFile(File input) {
-    // This method runs in a separate isolate
-    // Add image optimization logic here if needed
-    // (e.g., further compression, resizing, etc.)
-    return input;
+  // Helper function to be executed in isolate
+  static Future<File> _compressImage(Map<String, dynamic> params) async {
+    final String filePath = params['path'];
+    final int maxWidth = params['maxWidth'];
+    final int maxHeight = params['maxHeight'];
+    final int quality = params['quality'];
+
+    // Create a target file path for the compressed image
+    final Directory tempDir = await getTemporaryDirectory();
+    final String targetPath =
+        p.join(tempDir.path, '${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+    // Compress the image using file paths instead of File objects
+    final result = await FlutterImageCompress.compressAndGetFile(
+      filePath,
+      targetPath,
+      minWidth: maxWidth,
+      minHeight: maxHeight,
+      quality: quality,
+    );
+
+    if (result == null) {
+      throw Exception('Failed to compress image');
+    }
+
+    return File(result.path);
   }
 
   void _showLogoutConfirmation(BuildContext context, WidgetRef ref) {

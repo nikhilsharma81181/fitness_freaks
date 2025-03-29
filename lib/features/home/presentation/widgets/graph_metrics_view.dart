@@ -13,11 +13,24 @@ class GraphMetricsView extends StatefulWidget {
 
 class _GraphMetricsViewState extends State<GraphMetricsView> {
   // Sample data for the graphs
-  final List<double> heartRateData = [65, 68, 72, 78, 68, 65, 62, 64, 68, 70, 68, 65];
+  final List<double> heartRateData = [
+    65,
+    68,
+    72,
+    78,
+    68,
+    65,
+    62,
+    64,
+    68,
+    70,
+    68,
+    65
+  ];
   final List<double> sleepData = [7.5, 6.8, 7.2, 8.1, 6.5, 7.0, 7.8];
   final List<double> calorieData = [350, 420, 380, 450, 510, 420, 400];
   final List<double> activeMinutes = [45, 60, 30, 75, 65, 40, 55];
-  
+
   // Selected time period
   String selectedPeriod = 'Week';
   final List<String> periods = ['Day', 'Week', 'Month', 'Year'];
@@ -41,7 +54,7 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                   color: Colors.white,
                 ),
               ),
-              
+
               // Period picker
               Container(
                 decoration: BoxDecoration(
@@ -62,7 +75,8 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                       color: Colors.white,
                     ),
                     underline: null,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
                         setState(() {
@@ -70,7 +84,8 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                         });
                       }
                     },
-                    items: periods.map<DropdownMenuItem<String>>((String value) {
+                    items:
+                        periods.map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
@@ -82,9 +97,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Metrics graphs in a scrollable horizontal container
         SizedBox(
           height: 250,
@@ -101,9 +116,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                 iconData: Icons.favorite,
                 data: heartRateData,
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Active Minutes Graph
               _buildMetricCard(
                 title: 'Active Minutes',
@@ -113,9 +128,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                 iconData: Icons.local_fire_department,
                 data: activeMinutes,
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Calories Graph
               _buildMetricCard(
                 title: 'Calories',
@@ -125,9 +140,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                 iconData: Icons.bolt,
                 data: calorieData,
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Sleep Graph
               _buildMetricCard(
                 title: 'Sleep',
@@ -143,7 +158,7 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
       ],
     );
   }
-  
+
   Widget _buildMetricCard({
     required String title,
     required String value,
@@ -152,8 +167,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
     required IconData iconData,
     required List<double> data,
   }) {
-    final double maxValue = data.reduce((curr, next) => curr > next ? curr : next);
-    
+    final double maxValue =
+        data.reduce((curr, next) => curr > next ? curr : next);
+
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: SizedBox(
@@ -188,9 +204,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 14),
-            
+
             // Value display
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -214,9 +230,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 14),
-            
+
             // Graph
             Expanded(
               child: Row(
@@ -244,9 +260,9 @@ class _GraphMetricsViewState extends State<GraphMetricsView> {
                 }),
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Day indicators
             Row(
               children: List.generate(data.length, (index) {

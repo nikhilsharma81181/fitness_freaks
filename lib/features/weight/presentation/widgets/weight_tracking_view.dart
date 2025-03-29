@@ -12,8 +12,8 @@ import 'line_chart.dart';
 
 /// Widget for displaying weight tracking functionality
 class WeightTrackingView extends HookConsumerWidget {
-  final bool isUserLoading;  
-  
+  final bool isUserLoading;
+
   const WeightTrackingView({
     Key? key,
     this.isUserLoading = false,
@@ -50,6 +50,8 @@ class WeightTrackingView extends HookConsumerWidget {
 
   Widget _buildWeightTrackingCard(
       BuildContext context, WidgetRef ref, WeightState state) {
+    final isSyncing = state.isSyncing || isUserLoading;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -71,9 +73,10 @@ class WeightTrackingView extends HookConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with title and add button
-          _buildHeader(context, ref, state.isSyncing || isUserLoading),
-      
-          // We no longer show a separate sync indicator - it's in the header
+          _buildHeader(context, ref, isSyncing),
+
+          // Sync button row
+          _buildSyncRow(context, ref, isSyncing),
 
           // Show appropriate content based on state
           if (state.status == WeightStatus.loading && state.entries.isEmpty)
@@ -99,26 +102,14 @@ class WeightTrackingView extends HookConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            const Text(
-              'Weight Tracking',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            // Show sync icon when syncing, directly in the header
-            if (isSyncing) ...[  
-              const SizedBox(width: 8),
-              Icon(
-                Icons.sync,
-                size: 16,
-                color: AppColors.accent1,
-              ),
-            ],
-          ],
+        // Title
+        const Text(
+          'Weight Tracking',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
 
         // Add button with camera icon
@@ -160,25 +151,42 @@ class WeightTrackingView extends HookConsumerWidget {
     );
   }
 
-  Widget _buildSyncIndicator() {
+  // Add the "Tap to sync" text with sync button
+  Widget _buildSyncRow(BuildContext context, WidgetRef ref, bool isSyncing) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
-      child: Row(
-        children: [
-          Icon(
-            Icons.sync,
-            size: 12,
-            color: AppColors.accent1,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Syncing...',
-            style: TextStyle(
-              color: AppColors.accent1,
-              fontSize: 12,
+      child: InkWell(
+        onTap: isSyncing
+            ? null
+            : () {
+                // Show feedback
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   const SnackBar(
+                //     content: Text('Syncing weight data...'),
+                //     duration: Duration(seconds: 1),
+                //   ),
+                // );
+                // Trigger sync
+                ref
+                    .read(weightNotifierProvider.notifier)
+                    .getWeightEntries(forceRefresh: true);
+              },
+        child: Row(
+          children: [
+            // Sync button that rotates during syncing
+            _SyncIcon(isSyncing: isSyncing),
+
+            const SizedBox(width: 8),
+
+            Text(
+              'Tap to sync',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -968,6 +976,64 @@ class WeightTrackingView extends HookConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+/// Widget that displays a sync icon that rotates when syncing
+class _SyncIcon extends StatefulWidget {
+  final bool isSyncing;
+
+  const _SyncIcon({required this.isSyncing});
+
+  @override
+  _SyncIconState createState() => _SyncIconState();
+}
+
+class _SyncIconState extends State<_SyncIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    if (widget.isSyncing) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_SyncIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.isSyncing && !_controller.isAnimating) {
+      _controller.repeat();
+    } else if (!widget.isSyncing && _controller.isAnimating) {
+      _controller.stop();
+      _controller.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child: Icon(
+        Icons.sync,
+        size: 16,
+        color: AppColors.accent1,
+      ),
     );
   }
 }
