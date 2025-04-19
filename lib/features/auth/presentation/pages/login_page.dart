@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fitness_freaks_flutter/features/home/presentation/pages/homepage.dart'; // Assuming this path is correct
+import 'package:fitness_freaks_flutter/features/home/presentation/pages/homepage.dart';
+import 'onboarding_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -330,10 +331,10 @@ class _LoginPageState extends State<LoginPage>
   }
 
   void _navigateToHome(BuildContext context) {
-    // Ensure HomePage is imported correctly
+    // Navigate to onboarding flow instead of directly to home
     Navigator.of(context).pushReplacement(
       CupertinoPageRoute(
-        builder: (context) => const HomePage(),
+        builder: (context) => const OnboardingPage(),
       ),
     );
   }

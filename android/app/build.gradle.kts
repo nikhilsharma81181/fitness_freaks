@@ -8,7 +8,11 @@ plugins {
 android {
     namespace = "com.example.fitness_freaks_flutter"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Removing problematic NDK version reference
+    // ndkVersion = flutter.ndkVersion
+    
+    // Specify a known stable NDK version
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

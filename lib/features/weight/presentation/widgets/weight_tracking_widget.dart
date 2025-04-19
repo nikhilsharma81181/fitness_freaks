@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 class WeightTrackingWidget extends StatefulWidget {
   const WeightTrackingWidget({Key? key}) : super(key: key);
@@ -28,10 +31,10 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget>
     65.0,
     66.5,
     66.0,
-    56.7
+    63.7
   ];
-  final List<String> _recentDates = ['Mar 28', 'Mar 28', 'Mar 28'];
-  final List<String> _recentWeights = ['56.7 kg', '65.1 kg', '64.3 kg'];
+  final List<String> _recentDates = ['Apr 19', 'Apr 19', 'Apr 18'];
+  final List<String> _recentWeights = ['63.7 kg', '63.8 kg', '64.3 kg'];
 
   @override
   void initState() {
@@ -66,7 +69,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 25),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.grey.withOpacity(0.05),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: Colors.white.withOpacity(0.1),
@@ -91,7 +94,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget>
                         color: Colors.white,
                       ),
                     ),
-                    _buildAddButton(),
+                    _buildAddButton(context),
                   ],
                 ),
               ),
@@ -103,11 +106,20 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget>
                   onTap: _onSyncTap,
                   child: Row(
                     children: [
-                      Icon(
-                        CupertinoIcons.arrow_2_circlepath,
-                        color: Colors.white.withOpacity(0.5),
-                        size: 16,
-                      ),
+                      _isSyncing
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white.withOpacity(0.5),
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Icon(
+                              CupertinoIcons.arrow_2_circlepath,
+                              color: Colors.white.withOpacity(0.5),
+                              size: 16,
+                            ),
                       const SizedBox(width: 8),
                       Text(
                         'Tap to sync',
@@ -210,35 +222,430 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget>
     );
   }
 
-  Widget _buildAddButton() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: AppColors.primaryColor,
-          width: 1.0,
+  Widget _buildAddButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showAddOptionsBottomSheet(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: AppColors.primaryColor,
+            width: 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              CupertinoIcons.camera_fill,
+              color: AppColors.primaryColor,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Add',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryColor,
+              ),
+            ),
+          ],
         ),
       ),
-      child: Row(
-        children: [
-          Icon(
-            CupertinoIcons.camera_fill,
-            color: AppColors.primaryColor,
-            size: 18,
+    );
+  }
+
+  void _showAddOptionsBottomSheet(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text(
+          'Add Weight Entry',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(width: 8),
-          Text(
-            'Add',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryColor,
+        ),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _showWeightEntryDialog(context);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  CupertinoIcons.keyboard,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Enter Weight',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _takePicture(context);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  CupertinoIcons.camera,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Take Photo',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+        cancelButton: CupertinoActionSheetAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Cancel',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  void _showWeightEntryDialog(BuildContext context) {
+    TextEditingController weightController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF171717),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Close button
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16, top: 16),
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          CupertinoIcons.xmark,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add Weight Entry',
+                          style: GoogleFonts.inter(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Weight field
+                        Text(
+                          'Weight (kg)',
+                          style: GoogleFonts.inter(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        CupertinoTextField(
+                          controller: weightController,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          placeholder: '0.0',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                          suffix: Padding(
+                            padding: const EdgeInsets.only(right: 16.0),
+                            child: Text(
+                              'kg',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: BoxDecoration(
+                            color: Colors.black26,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Notes field (optional)
+                        Text(
+                          'Notes (Optional)',
+                          style: GoogleFonts.inter(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        CupertinoTextField(
+                          padding: const EdgeInsets.all(16),
+                          placeholder: 'Add notes here',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                          ),
+                          maxLines: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.black26,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // Save button
+                        SizedBox(
+                          width: double.infinity,
+                          child: CupertinoButton(
+                            color: AppColors.primaryColor,
+                            borderRadius: BorderRadius.circular(12),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            onPressed: () {
+                              // Save the weight entry
+                              if (weightController.text.isNotEmpty) {
+                                // Close the dialog
+                                Navigator.pop(context);
+                                // Show confirmation
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Weight entry saved: ${weightController.text} kg'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else {
+                                // Show error
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Please enter a weight value'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            child: Text(
+                              'Save Entry',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _takePicture(BuildContext context) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? photo = await picker.pickImage(source: ImageSource.camera);
+
+      if (photo != null) {
+        // Show photo preview
+        _showPhotoPreview(context, File(photo.path));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error taking picture: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showPhotoPreview(BuildContext context, File imageFile) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Color(0xFF171717),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Weight Photo Preview',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.file(
+                    imageFile,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Text(
+                  'The AI will analyze this photo to extract your weight value',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Upload',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          // Process image and extract weight
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Processing weight from photo...'),
+                              backgroundColor: Colors.blue,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -282,7 +689,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget>
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    '56.7',
+                    '63.7',
                     style: GoogleFonts.inter(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
@@ -316,7 +723,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget>
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '8.4 kg',
+                  '0.1 kg',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

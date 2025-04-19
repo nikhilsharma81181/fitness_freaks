@@ -10,6 +10,7 @@ import 'package:fitness_freaks_flutter/features/home/presentation/widgets/backgr
 import 'package:fitness_freaks_flutter/core/widgets/app_tab_bar.dart';
 import 'package:fitness_freaks_flutter/features/home/presentation/widgets/workout_progress_card.dart';
 import 'package:fitness_freaks_flutter/features/weight/presentation/widgets/weight_tracking_widget.dart';
+import 'package:fitness_freaks_flutter/features/home/presentation/widgets/diet_tracking_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -99,6 +100,11 @@ class _HomePageState extends State<HomePage> {
 
                   // Weight tracking widget
                   const WeightTrackingWidget(),
+
+                  const SizedBox(height: 16),
+
+                  // Diet tracking widget
+                  const DietTrackingWidget(),
 
                   const SizedBox(height: 16),
                 ],
@@ -431,38 +437,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildViewAllButton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'View All Data',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.arrow_forward,
-              color: Colors.black,
-              size: 16,
-            ),
-          ],
-        ),
       ),
     );
   }
