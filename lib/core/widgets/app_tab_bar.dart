@@ -24,11 +24,11 @@ class AppTabBar extends StatelessWidget {
 
     return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+        filter: ImageFilter.blur(sigmaX: 50.0, sigmaY: 50.0),
         child: Container(
           padding: const EdgeInsets.only(bottom: 27),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withOpacity(0.15),
             border: const Border(
               top: BorderSide(
                 color: Colors.white12,
@@ -37,10 +37,10 @@ class AppTabBar extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: activeColor.withOpacity(0.2),
-                blurRadius: 15,
-                spreadRadius: -3,
-                offset: const Offset(0, -4),
+                color: activeColor.withOpacity(0.1),
+                blurRadius: 20,
+                spreadRadius: -5,
+                offset: const Offset(0, -6),
               ),
             ],
           ),
