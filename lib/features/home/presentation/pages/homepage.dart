@@ -11,6 +11,8 @@ import 'package:fitness_freaks_flutter/core/widgets/app_tab_bar.dart';
 import 'package:fitness_freaks_flutter/features/home/presentation/widgets/workout_progress_card.dart';
 import 'package:fitness_freaks_flutter/features/weight/presentation/widgets/weight_tracking_widget.dart';
 import 'package:fitness_freaks_flutter/features/home/presentation/widgets/diet_tracking_widget.dart';
+import 'package:fitness_freaks_flutter/features/weight/presentation/pages/weight_detail_page.dart';
+import 'package:fitness_freaks_flutter/features/diet/presentation/pages/diet_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -99,12 +101,30 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 16),
 
                   // Weight tracking widget
-                  const WeightTrackingWidget(),
+                  WeightTrackingWidget(
+                    onViewAllTap: () {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => const WeightDetailPage(),
+                        ),
+                      );
+                    },
+                  ),
 
                   const SizedBox(height: 16),
 
                   // Diet tracking widget
-                  const DietTrackingWidget(),
+                  DietTrackingWidget(
+                    onViewAllTap: () {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => const DietDetailPage(),
+                        ),
+                      );
+                    },
+                  ),
 
                   const SizedBox(height: 16),
                 ],

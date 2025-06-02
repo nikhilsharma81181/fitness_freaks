@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
 
 class DietTrackingWidget extends StatefulWidget {
-  const DietTrackingWidget({Key? key}) : super(key: key);
+  final VoidCallback? onViewAllTap;
+
+  const DietTrackingWidget({Key? key, this.onViewAllTap}) : super(key: key);
 
   @override
   State<DietTrackingWidget> createState() => _DietTrackingWidgetState();
@@ -556,31 +558,36 @@ class _DietTrackingWidgetState extends State<DietTrackingWidget> {
   }
 
   Widget _buildViewAllButton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF01DD84),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'View All Meals',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
+    return GestureDetector(
+      onTap: () {
+        widget.onViewAllTap?.call();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF05E5B3),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'View All Meals',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(
-            CupertinoIcons.chevron_right,
-            color: Colors.black,
-            size: 18,
-          ),
-        ],
+            const SizedBox(width: 8),
+            const Icon(
+              CupertinoIcons.chevron_right,
+              color: Colors.black,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }

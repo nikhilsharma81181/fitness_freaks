@@ -1,3 +1,4 @@
+import 'package:fitness_freaks_flutter/features/home/presentation/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -68,7 +69,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginPage(),
+      home: const HomePage(),
+      // home: const LoginPage(),
     );
   }
 }
