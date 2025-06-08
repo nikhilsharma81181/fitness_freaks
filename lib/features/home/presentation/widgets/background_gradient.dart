@@ -14,6 +14,7 @@ enum TabType {
   workoutPreferences,
   dietaryInfo,
   summary,
+  workoutCreation,
 }
 
 class BackgroundGradient extends StatelessWidget {
@@ -42,9 +43,12 @@ class BackgroundGradient extends StatelessWidget {
         secondaryColor = AppColors.homepageGradient2;
         break;
       case TabType.fitness:
-        // Energetic green to teal
-        primaryColor = AppColors.fitnessGradient1;
-        secondaryColor = AppColors.fitnessGradient2;
+        // Subtle warm gradient - professional and clean
+        // Muted orange-red for energy without being overwhelming
+        primaryColor = const Color(0xFF2D1B69); // Deep purple-blue
+        secondaryColor = const Color(0xFF8B5A3C); // Warm brown
+        opacity = 0.4;
+        blurRadius = 50;
         break;
       case TabType.chat:
         // Soft purple to warm pink
@@ -109,6 +113,15 @@ class BackgroundGradient extends StatelessWidget {
         secondaryColor = const Color(0xFF7161EF);
         opacity = 0.6;
         blurRadius = 35;
+        break;
+      case TabType.workoutCreation:
+        // Energetic purple to teal gradient - symbolizes creativity and focus
+        // Purple represents innovation while teal represents balance and focus
+        // Perfect for creating new workouts
+        primaryColor = const Color(0xFF6B46C1);
+        secondaryColor = const Color(0xFF059669);
+        opacity = 0.5;
+        blurRadius = 40;
         break;
     }
 
@@ -182,7 +195,7 @@ class BackgroundGradient extends StatelessWidget {
             if (forTab == TabType.home)
               _buildHomeAccent(size, AppColors.homepageGradient2),
             if (forTab == TabType.fitness)
-              _buildFitnessAccent(size, AppColors.fitnessGradient1),
+              _buildFitnessAccent(size, const Color(0xFFF39C12)),
             if (forTab == TabType.chat)
               _buildChatAccent(size, AppColors.chatGradient2),
             if (forTab == TabType.personalInfo) _buildPersonalInfoAccent(size),
@@ -193,6 +206,8 @@ class BackgroundGradient extends StatelessWidget {
               _buildWorkoutPreferencesAccent(size),
             if (forTab == TabType.dietaryInfo) _buildDietaryInfoAccent(size),
             if (forTab == TabType.summary) _buildSummaryAccent(size),
+            if (forTab == TabType.workoutCreation)
+              _buildWorkoutCreationAccent(size),
           ],
         ),
 
@@ -236,27 +251,57 @@ class BackgroundGradient extends StatelessWidget {
   }
 
   Widget _buildFitnessAccent(Size size, Color accentColor) {
-    return Positioned(
-      top: size.height * 0.3,
-      left: size.width * 0.1,
-      child: Container(
-        width: size.width * 0.8,
-        height: size.height * 0.3,
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            colors: [
-              accentColor.withOpacity(0.3),
-              Colors.transparent,
-            ],
-            center: Alignment.center,
-            radius: 1.0,
+    return Stack(
+      children: [
+        // Subtle bottom accent
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: Container(
+            width: size.width,
+            height: size.height * 0.3,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF4A5568).withOpacity(0.12), // Subtle gray-blue
+                  Colors.transparent,
+                ],
+                center: Alignment.bottomLeft,
+                radius: 1.2,
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+              child: Container(color: Colors.transparent),
+            ),
           ),
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Container(color: Colors.transparent),
+
+        // Minimal top accent for subtle contrast
+        Positioned(
+          top: size.height * 0.15,
+          right: size.width * 0.2,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+                center: Alignment.center,
+                radius: 0.8,
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -580,6 +625,57 @@ class BackgroundGradient extends StatelessWidget {
               gradient: RadialGradient(
                 colors: [
                   const Color(0xFF847AF9).withOpacity(0.3),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // New accent for workout creation
+  Widget _buildWorkoutCreationAccent(Size size) {
+    return Stack(
+      children: [
+        Positioned(
+          top: size.height * 0.1,
+          left: size.width * 0.1,
+          child: Container(
+            width: size.width * 0.8,
+            height: size.height * 0.4,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF10B981).withOpacity(0.3),
+                  Colors.transparent,
+                ],
+                center: Alignment.centerLeft,
+                radius: 1.2,
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 35, sigmaY: 35),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: size.height * 0.2,
+          right: size.width * 0.2,
+          child: Container(
+            width: 160,
+            height: 160,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF8B5CF6).withOpacity(0.25),
                   Colors.transparent,
                 ],
               ),

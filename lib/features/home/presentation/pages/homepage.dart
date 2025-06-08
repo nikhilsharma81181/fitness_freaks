@@ -8,6 +8,7 @@ import 'package:fitness_freaks_flutter/features/home/presentation/widgets/backgr
 import 'package:fitness_freaks_flutter/core/widgets/app_tab_bar.dart';
 import 'package:fitness_freaks_flutter/features/home/presentation/pages/home_view.dart';
 import 'package:fitness_freaks_flutter/features/home/presentation/pages/chat_view.dart';
+import 'package:fitness_freaks_flutter/features/home/presentation/pages/fitness_view.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -51,9 +52,9 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return const HomeView();
       case 1:
-        return const FitnessPage();
+        return const FitnessView();
       case 2:
-        return const ChatPage();
+        return const ChatView();
       case 3:
         return const ProfilePage();
       default:
@@ -78,102 +79,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// Placeholder pages
-class FitnessPage extends StatelessWidget {
-  const FitnessPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            Text(
-              'Fitness',
-              style: GoogleFonts.inter(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Track your workouts and fitness goals',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                color: Colors.white.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Expanded(
-              child: Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            FontAwesomeIcons.dumbbell,
-                            color: AppColors.fitnessGradient1,
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Coming Soon',
-                            style: GoogleFonts.inter(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Advanced fitness tracking features\nare being developed',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.7),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ChatPage extends StatelessWidget {
-  const ChatPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const ChatView();
-  }
-}
-
+// Placeholder profile page
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
