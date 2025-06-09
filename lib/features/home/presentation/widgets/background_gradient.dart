@@ -15,6 +15,8 @@ enum TabType {
   dietaryInfo,
   summary,
   workoutCreation,
+  discoverWorkouts,
+  aiWorkoutGeneration,
 }
 
 class BackgroundGradient extends StatelessWidget {
@@ -123,6 +125,24 @@ class BackgroundGradient extends StatelessWidget {
         opacity = 0.5;
         blurRadius = 40;
         break;
+      case TabType.discoverWorkouts:
+        // Vibrant blue to electric purple gradient - symbolizes discovery and exploration
+        // Blue represents trust and reliability while purple represents innovation
+        // Perfect for discovering new workouts from the community
+        primaryColor = const Color(0xFF1E40AF);
+        secondaryColor = const Color(0xFF7C3AED);
+        opacity = 0.6;
+        blurRadius = 45;
+        break;
+      case TabType.aiWorkoutGeneration:
+        // AI-inspired gradient - deep purple to electric blue - symbolizes artificial intelligence and innovation
+        // Deep purple represents intelligence and sophistication while electric blue represents technology and innovation
+        // Perfect for AI-powered workout generation
+        primaryColor = const Color(0xFF4C1D95);
+        secondaryColor = const Color(0xFF1E40AF);
+        opacity = 0.5;
+        blurRadius = 45;
+        break;
     }
 
     return Stack(
@@ -208,6 +228,10 @@ class BackgroundGradient extends StatelessWidget {
             if (forTab == TabType.summary) _buildSummaryAccent(size),
             if (forTab == TabType.workoutCreation)
               _buildWorkoutCreationAccent(size),
+            if (forTab == TabType.discoverWorkouts)
+              _buildDiscoverWorkoutsAccent(size),
+            if (forTab == TabType.aiWorkoutGeneration)
+              _buildAiWorkoutGenerationAccent(size),
           ],
         ),
 
@@ -682,6 +706,176 @@ class BackgroundGradient extends StatelessWidget {
             ),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // New accent for discover workouts
+  Widget _buildDiscoverWorkoutsAccent(Size size) {
+    return Stack(
+      children: [
+        Positioned(
+          top: size.height * 0.05,
+          right: size.width * 0.05,
+          child: Container(
+            width: size.width * 0.9,
+            height: size.height * 0.5,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF3B82F6).withOpacity(0.35),
+                  Colors.transparent,
+                ],
+                center: Alignment.topRight,
+                radius: 1.3,
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: size.height * 0.15,
+          left: size.width * 0.15,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF8B5CF6).withOpacity(0.3),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+        // Additional discovery-themed accent
+        Positioned(
+          top: size.height * 0.3,
+          left: size.width * 0.05,
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withOpacity(0.1),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // New accent for AI workout generation
+  Widget _buildAiWorkoutGenerationAccent(Size size) {
+    return Stack(
+      children: [
+        // Main AI-themed gradient
+        Positioned(
+          top: size.height * 0.1,
+          left: size.width * 0.1,
+          child: Container(
+            width: size.width * 0.8,
+            height: size.height * 0.6,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF10B981).withOpacity(0.4),
+                  Colors.transparent,
+                ],
+                center: Alignment.centerLeft,
+                radius: 1.4,
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+        // Tech-inspired accent
+        Positioned(
+          top: size.height * 0.05,
+          right: size.width * 0.1,
+          child: Container(
+            width: 180,
+            height: 180,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF0EA5E9).withOpacity(0.35),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 35, sigmaY: 35),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+        // Neural network-inspired geometric accent
+        Positioned(
+          bottom: size.height * 0.2,
+          right: size.width * 0.05,
+          child: Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(25),
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withOpacity(0.12),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        ),
+        // Additional AI sparkle effect
+        Positioned(
+          bottom: size.height * 0.1,
+          left: size.width * 0.2,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF34D399).withOpacity(0.2),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: Container(color: Colors.transparent),
             ),
           ),

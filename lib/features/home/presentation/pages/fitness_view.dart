@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
 import 'create_workout_page.dart';
 import 'all_workouts_page.dart';
+import 'discover_workouts_page.dart';
+import 'ai_workout_generation_page.dart';
 
 class FitnessView extends StatefulWidget {
   const FitnessView({super.key});
@@ -592,7 +594,12 @@ class _FitnessViewState extends State<FitnessView>
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  // Navigate to discover workouts
+                  Navigator.push(
+                    context,
+                    CupertinoPageRoute(
+                      builder: (context) => const DiscoverWorkoutsPage(),
+                    ),
+                  );
                 },
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
@@ -716,6 +723,8 @@ class _FitnessViewState extends State<FitnessView>
             return _buildWorkoutCard(plan);
           },
         ),
+
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -729,7 +738,12 @@ class _FitnessViewState extends State<FitnessView>
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              // AI workout generation
+              Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => const AiWorkoutGenerationPage(),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.vibrantMint,
@@ -849,13 +863,26 @@ class _FitnessViewState extends State<FitnessView>
                           Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  plan['name'],
-                                  style: GoogleFonts.inter(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      plan['name'],
+                                      style: GoogleFonts.inter(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '(${(plan['exercises'] as List).length})',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white.withOpacity(0.6),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               if (plan['isAI'])
