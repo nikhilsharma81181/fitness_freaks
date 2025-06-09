@@ -1,9 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
 import 'create_workout_page.dart';
+import 'all_workouts_page.dart';
 
 class FitnessView extends StatefulWidget {
   const FitnessView({super.key});
@@ -41,54 +43,99 @@ class _FitnessViewState extends State<FitnessView>
 
   final List<Map<String, dynamic>> _workoutPlans = [
     {
-      'name': 'Full Body Strength',
-      'description': 'Complete strength training',
-      'exercises': 6,
+      'name': 'Back and Biceps',
+      'description': 'Upper body pulling muscles',
+      'exercises': [
+        'Reverse Grip Lat Pulldown (Cable)',
+        'Single Arm Cable Row',
+        'Seated Cable Row - Bar Grip',
+        'Seated Cable Row - Wide Grip',
+        'Bicep Curls',
+        'Hammer Curls'
+      ],
       'duration': '45 min',
+      'frequency': '3x week',
       'difficulty': 'Intermediate',
       'isAI': false,
       'color': const Color(0xFF007AFF),
       'icon': CupertinoIcons.bars,
+      'lastUsed': '2 days ago',
     },
     {
-      'name': 'HIIT Cardio Blast',
-      'description': 'High intensity intervals',
-      'exercises': 5,
+      'name': 'Triceps',
+      'description': 'Arm extension focused workout',
+      'exercises': [
+        'Skullcrusher (Dumbbell)',
+        'Triceps Extension (Cable)',
+        'Triceps Pushdown',
+        'Triceps Rope Pushdown',
+        'Close-Grip Push-ups',
+        'Dips'
+      ],
       'duration': '30 min',
+      'frequency': '3x week',
       'difficulty': 'Intermediate',
       'isAI': false,
       'color': const Color(0xFFFF3B30),
       'icon': CupertinoIcons.heart_fill,
+      'lastUsed': 'Yesterday',
     },
     {
-      'name': 'Upper Body Focus',
-      'description': 'Arms, chest, back strength',
-      'exercises': 7,
-      'duration': '50 min',
-      'difficulty': 'Advanced',
-      'isAI': false,
-      'color': const Color(0xFF007AFF),
-      'icon': CupertinoIcons.bars,
-    },
-    {
-      'name': 'Core & Flexibility',
-      'description': 'Core strength and stretching',
-      'exercises': 8,
-      'duration': '35 min',
+      'name': 'Biceps',
+      'description': 'Arm flexion and strength',
+      'exercises': [
+        'Bicep Curl (Cable)',
+        'Bicep Curl (Dumbbell)',
+        'Concentration Curl',
+        'Cross Body Hammer Curl',
+        'Drag Curl',
+        'Preacher Curls'
+      ],
+      'duration': '25 min',
+      'frequency': '3x week',
       'difficulty': 'Beginner',
       'isAI': false,
       'color': const Color(0xFF30D158),
       'icon': CupertinoIcons.person_alt,
+      'lastUsed': '1 week ago',
+    },
+    {
+      'name': 'Chest Power',
+      'description': 'Upper body pushing strength',
+      'exercises': [
+        'Bench Press',
+        'Incline Dumbbell Press',
+        'Chest Flyes',
+        'Push-ups',
+        'Cable Crossover',
+        'Dips'
+      ],
+      'duration': '50 min',
+      'frequency': '2x week',
+      'difficulty': 'Advanced',
+      'isAI': false,
+      'color': const Color(0xFFFF9500),
+      'icon': CupertinoIcons.flame_fill,
+      'lastUsed': '3 days ago',
     },
     {
       'name': 'Leg Day Challenge',
       'description': 'Lower body power training',
-      'exercises': 6,
+      'exercises': [
+        'Squats',
+        'Lunges',
+        'Leg Press',
+        'Calf Raises',
+        'Bulgarian Split Squats',
+        'Leg Curls'
+      ],
       'duration': '55 min',
+      'frequency': '2x week',
       'difficulty': 'Advanced',
       'isAI': false,
-      'color': const Color(0xFF007AFF),
-      'icon': CupertinoIcons.bars,
+      'color': const Color(0xFF5856D6),
+      'icon': CupertinoIcons.bolt_fill,
+      'lastUsed': '5 days ago',
     },
   ];
 
@@ -605,13 +652,19 @@ class _FitnessViewState extends State<FitnessView>
             children: [
               _buildFilterTab('All', true),
               const SizedBox(width: 12),
-              _buildFilterTab('Strength', false),
+              _buildFilterTab('Chest', false),
               const SizedBox(width: 12),
-              _buildFilterTab('Cardio', false),
+              _buildFilterTab('Back', false),
               const SizedBox(width: 12),
-              _buildFilterTab('Flexibility', false),
+              _buildFilterTab('Biceps', false),
               const SizedBox(width: 12),
-              _buildFilterTab('HIIT', false),
+              _buildFilterTab('Triceps', false),
+              const SizedBox(width: 12),
+              _buildFilterTab('Shoulders', false),
+              const SizedBox(width: 12),
+              _buildFilterTab('Legs', false),
+              const SizedBox(width: 12),
+              _buildFilterTab('Core', false),
             ],
           ),
         ),
@@ -630,12 +683,22 @@ class _FitnessViewState extends State<FitnessView>
                 color: Colors.white,
               ),
             ),
-            Text(
-              'View All',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryColor,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => const AllWorkoutsPage(),
+                  ),
+                );
+              },
+              child: Text(
+                'View All',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryColor,
+                ),
               ),
             ),
           ],
@@ -643,12 +706,11 @@ class _FitnessViewState extends State<FitnessView>
 
         const SizedBox(height: 16),
 
-        // Workout List (Apple Fitness Style)
-        ListView.separated(
+        // Workout List (Apple Fitness Style) - Show only 5 recent workouts
+        ListView.builder(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
-          itemCount: _workoutPlans.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemCount: _workoutPlans.take(5).length,
           itemBuilder: (context, index) {
             final plan = _workoutPlans[index];
             return _buildWorkoutCard(plan);
@@ -731,18 +793,12 @@ class _FitnessViewState extends State<FitnessView>
   }
 
   Widget _buildWorkoutCard(Map<String, dynamic> plan) {
-    final lastUsedDays = [
-      '2 days ago',
-      'Yesterday',
-      '1 week ago',
-      '3 days ago'
-    ];
-    final index = _workoutPlans.indexOf(plan);
-    final lastUsed =
-        index < lastUsedDays.length ? lastUsedDays[index] : '5 days ago';
+    final exercises = plan['exercises'] as List<String>;
+    final displayExercises = exercises.take(3).toList();
+    final hasMoreExercises = exercises.length > 3;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -752,133 +808,252 @@ class _FitnessViewState extends State<FitnessView>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Colors.white.withOpacity(0.15),
           width: 1.0,
         ),
       ),
-      child: Row(
-        children: [
-          // Icon Container
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: plan['color'],
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Icon(
-                plan['icon'],
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // Workout Info
-          Expanded(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header with icon and title
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        plan['name'],
-                        style: GoogleFonts.inter(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: plan['color'],
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          plan['icon'],
                           color: Colors.white,
+                          size: 24,
                         ),
                       ),
                     ),
-                    if (plan['isAI'])
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.primaryColor.withOpacity(0.4),
-                            width: 1,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  plan['name'],
+                                  style: GoogleFonts.inter(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              if (plan['isAI'])
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.vibrantMint.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.vibrantMint
+                                          .withOpacity(0.4),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'AI',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.vibrantMint,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                        child: Text(
-                          'AI',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryColor,
-                            letterSpacing: 0.5,
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                CupertinoIcons.time,
+                                size: 14,
+                                color: Colors.white.withOpacity(0.6),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                plan['duration'],
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: Colors.white.withOpacity(0.6),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                CupertinoIcons.calendar,
+                                size: 14,
+                                color: Colors.white.withOpacity(0.6),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                plan['frequency'],
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: Colors.white.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                        ],
                       ),
+                    ),
+                    // Last Used Info
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Last Used',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          plan['lastUsed'],
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
+
+                const SizedBox(height: 16),
+
+                // Exercise List
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      CupertinoIcons.time,
-                      size: 14,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      plan['duration'],
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.7),
+                    ...displayExercises
+                        .map((exercise) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      exercise,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                    if (hasMoreExercises) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.4),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${exercises.length - 3} more exercises...',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.5),
+                              fontWeight: FontWeight.w400,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      CupertinoIcons.calendar,
-                      size: 14,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '3x week',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                    ),
+                    ],
                   ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Start Routine Button
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.vibrantMint,
+                        AppColors.vibrantTeal,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Start workout routine
+                      HapticFeedback.mediumImpact();
+                      // TODO: Navigate to workout session
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Start Routine',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-
-          // Last Used
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'Last Used',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.white.withOpacity(0.5),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                lastUsed,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
