@@ -8,6 +8,8 @@ import 'create_workout_page.dart';
 import 'all_workouts_page.dart';
 import 'discover_workouts_page.dart';
 import 'ai_workout_generation_page.dart';
+import 'workout_session_page.dart';
+import '../widgets/workout_history_card.dart';
 
 class FitnessView extends StatefulWidget {
   const FitnessView({super.key});
@@ -205,6 +207,33 @@ class _FitnessViewState extends State<FitnessView>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
+  }
+
+  List<Map<String, dynamic>> _getRecentWorkouts() {
+    // Sample recent workout data - in a real app this would come from a database
+    return [
+      {
+        'name': 'Back and Biceps',
+        'duration': '45 min',
+        'completedAt': 'Today',
+        'color': const Color(0xFF007AFF),
+        'icon': CupertinoIcons.bars,
+      },
+      {
+        'name': 'Chest Power',
+        'duration': '50 min',
+        'completedAt': 'Yesterday',
+        'color': const Color(0xFFFF9500),
+        'icon': CupertinoIcons.flame_fill,
+      },
+      {
+        'name': 'Triceps',
+        'duration': '30 min',
+        'completedAt': '2 days ago',
+        'color': const Color(0xFFFF3B30),
+        'icon': CupertinoIcons.heart_fill,
+      },
+    ];
   }
 
   @override
@@ -650,6 +679,11 @@ class _FitnessViewState extends State<FitnessView>
           ],
         ),
 
+        const SizedBox(height: 20),
+
+        // Quick Start Button
+        _buildQuickStartButton(),
+
         const SizedBox(height: 24),
 
         // Filter Tabs
@@ -724,8 +758,322 @@ class _FitnessViewState extends State<FitnessView>
           },
         ),
 
+        const SizedBox(height: 24),
+
+        // Workout History Section
+        WorkoutHistoryCard(
+          recentWorkouts: _getRecentWorkouts(),
+          onViewAllTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.vibrantMint.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          CupertinoIcons.info,
+                          color: AppColors.vibrantMint,
+                          size: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Workout history coming soon!',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                backgroundColor: Colors.black.withOpacity(0.8),
+                duration: const Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                margin: const EdgeInsets.all(16),
+              ),
+            );
+          },
+        ),
+
         const SizedBox(height: 16),
       ],
+    );
+  }
+
+  Widget _buildQuickStartButton() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.glassBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.glassBorder,
+              width: 1.5,
+            ),
+          ),
+          child: ElevatedButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              _showQuickStartOptions();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding:
+                  const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.vibrantMint.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    CupertinoIcons.play_fill,
+                    color: AppColors.vibrantMint,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Quick Start',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    Text(
+                      'Jump into your workout',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  color: Colors.white.withOpacity(0.6),
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQuickStartOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.glassBackground,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(
+                color: AppColors.glassBorder,
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  'Quick Start Options',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose a workout to start immediately',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Workout options
+                ..._workoutPlans.take(3).map((plan) => _buildQuickStartOption(
+                      icon: plan['icon'] as IconData,
+                      title: plan['name'],
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => WorkoutSessionPage(
+                              workoutPlan: plan,
+                            ),
+                          ),
+                        );
+                      },
+                    )),
+
+                // AI Workout option
+                _buildQuickStartOption(
+                  icon: CupertinoIcons.sparkles,
+                  title: 'Generate AI Workout',
+                  iconColor: AppColors.vibrantMint,
+                  textColor: AppColors.vibrantMint,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (context) => const AiWorkoutGenerationPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Cancel button
+                Container(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStartOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? iconColor,
+    Color? textColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (iconColor ?? Colors.white).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: iconColor ?? Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: textColor ?? Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  size: 16,
+                  color: Colors.white.withOpacity(0.4),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1055,7 +1403,14 @@ class _FitnessViewState extends State<FitnessView>
                     onPressed: () {
                       // Start workout routine
                       HapticFeedback.mediumImpact();
-                      // TODO: Navigate to workout session
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => WorkoutSessionPage(
+                            workoutPlan: plan,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,

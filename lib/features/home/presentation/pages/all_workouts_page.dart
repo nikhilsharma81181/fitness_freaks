@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
 import '../widgets/background_gradient.dart';
+import 'workout_session_page.dart';
 
 class AllWorkoutsPage extends StatefulWidget {
   const AllWorkoutsPage({super.key});
@@ -596,7 +597,14 @@ class _AllWorkoutsPageState extends State<AllWorkoutsPage> {
                     onPressed: () {
                       // Start workout routine
                       HapticFeedback.mediumImpact();
-                      // TODO: Navigate to workout session
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => WorkoutSessionPage(
+                            workoutPlan: plan,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,

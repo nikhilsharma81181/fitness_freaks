@@ -45,7 +45,7 @@ class AppTabBar extends StatelessWidget {
             ],
           ),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -66,6 +66,11 @@ class AppTabBar extends StatelessWidget {
                 ),
                 _buildTabItem(
                   index: 3,
+                  icon: CupertinoIcons.leaf_arrow_circlepath,
+                  label: 'Diet',
+                ),
+                _buildTabItem(
+                  index: 4,
                   icon: CupertinoIcons.person_fill,
                   label: 'Profile',
                 ),

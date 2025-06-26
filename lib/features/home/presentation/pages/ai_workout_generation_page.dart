@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
 import '../widgets/background_gradient.dart';
+import 'workout_session_page.dart';
 
 class AiWorkoutGenerationPage extends StatefulWidget {
   const AiWorkoutGenerationPage({super.key});
@@ -149,6 +150,68 @@ class _AiWorkoutGenerationPageState extends State<AiWorkoutGenerationPage>
       barrierDismissible: false,
       builder: (context) => _buildGeneratedWorkoutDialog(),
     );
+  }
+
+  Map<String, dynamic> _generateWorkoutPlan() {
+    // Generate a workout plan based on selected parameters
+    final Map<String, List<String>> exercisesByGoal = {
+      'Build Muscle': [
+        'Barbell Bench Press',
+        'Deadlifts',
+        'Squats',
+        'Pull-ups',
+        'Overhead Press',
+        'Barbell Rows',
+        'Dips',
+        'Bulgarian Split Squats'
+      ],
+      'Lose Weight': [
+        'Burpees',
+        'Mountain Climbers',
+        'Jump Squats',
+        'High Knees',
+        'Push-ups',
+        'Plank Jacks',
+        'Jumping Lunges',
+        'Russian Twists'
+      ],
+      'Get Stronger': [
+        'Deadlifts',
+        'Squats',
+        'Bench Press',
+        'Overhead Press',
+        'Pull-ups',
+        'Barbell Rows',
+        'Hip Thrusts',
+        'Farmer\'s Walk'
+      ],
+      'Improve Endurance': [
+        'Running in Place',
+        'Jumping Jacks',
+        'Burpees',
+        'Mountain Climbers',
+        'Bicycle Crunches',
+        'Plank Hold',
+        'Jump Rope',
+        'Step-ups'
+      ],
+    };
+
+    final exercises =
+        exercisesByGoal[_selectedGoal] ?? exercisesByGoal['Build Muscle']!;
+
+    return {
+      'name': 'AI Generated: $_selectedGoal Workout',
+      'description': 'Personalized $_selectedFocus workout for $_selectedGoal',
+      'exercises': exercises.take(6).toList(), // Take first 6 exercises
+      'duration': _selectedDuration,
+      'difficulty': _selectedDifficulty,
+      'focus': _selectedFocus,
+      'isAI': true,
+      'color': const Color(0xFF00D4AA),
+      'icon': CupertinoIcons.sparkles,
+      'createdAt': DateTime.now().toString(),
+    };
   }
 
   @override
@@ -853,7 +916,15 @@ class _AiWorkoutGenerationPageState extends State<AiWorkoutGenerationPage>
                       onPressed: () {
                         Navigator.pop(context);
                         Navigator.pop(context);
-                        // TODO: Navigate to generated workout details
+                        // Navigate to workout session with generated workout
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => WorkoutSessionPage(
+                              workoutPlan: _generateWorkoutPlan(),
+                            ),
+                          ),
+                        );
                       },
                       child: Text(
                         'Start Workout',

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fitness_freaks_flutter/core/constants/app_colors.dart';
 import '../widgets/background_gradient.dart';
+import 'workout_session_page.dart';
 
 class DiscoverWorkoutsPage extends StatefulWidget {
   const DiscoverWorkoutsPage({super.key});
@@ -812,7 +813,14 @@ class _DiscoverWorkoutsPageState extends State<DiscoverWorkoutsPage> {
                         child: ElevatedButton(
                           onPressed: () {
                             HapticFeedback.mediumImpact();
-                            // TODO: Navigate to workout session
+                            Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (context) => WorkoutSessionPage(
+                                  workoutPlan: workout,
+                                ),
+                              ),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
@@ -851,11 +859,23 @@ class _DiscoverWorkoutsPageState extends State<DiscoverWorkoutsPage> {
                       child: IconButton(
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          // TODO: Handle like
+                          setState(() {
+                            // Toggle like status
+                            workout['isLiked'] = !(workout['isLiked'] ?? false);
+                            if (workout['isLiked']) {
+                              workout['likes'] = (workout['likes'] ?? 0) + 1;
+                            } else {
+                              workout['likes'] = (workout['likes'] ?? 1) - 1;
+                            }
+                          });
                         },
                         icon: Icon(
-                          CupertinoIcons.heart,
-                          color: Colors.white.withOpacity(0.8),
+                          workout['isLiked'] == true
+                              ? CupertinoIcons.heart_fill
+                              : CupertinoIcons.heart,
+                          color: workout['isLiked'] == true
+                              ? AppColors.vibrantMint
+                              : Colors.white.withOpacity(0.8),
                           size: 20,
                         ),
                       ),
@@ -876,11 +896,71 @@ class _DiscoverWorkoutsPageState extends State<DiscoverWorkoutsPage> {
                       child: IconButton(
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          // TODO: Handle save
+                          setState(() {
+                            // Toggle save status
+                            workout['isSaved'] = !(workout['isSaved'] ?? false);
+                          });
+
+                          // Show feedback
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: workout['isSaved']
+                                            ? AppColors.vibrantMint
+                                                .withOpacity(0.2)
+                                            : Colors.white.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        workout['isSaved']
+                                            ? CupertinoIcons.checkmark
+                                            : CupertinoIcons.xmark,
+                                        color: workout['isSaved']
+                                            ? AppColors.vibrantMint
+                                            : Colors.white.withOpacity(0.8),
+                                        size: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        workout['isSaved']
+                                            ? 'Workout saved to favorites!'
+                                            : 'Workout removed from favorites',
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              backgroundColor: Colors.black.withOpacity(0.8),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              margin: const EdgeInsets.all(16),
+                            ),
+                          );
                         },
                         icon: Icon(
-                          CupertinoIcons.bookmark,
-                          color: Colors.white.withOpacity(0.8),
+                          workout['isSaved'] == true
+                              ? CupertinoIcons.bookmark_fill
+                              : CupertinoIcons.bookmark,
+                          color: workout['isSaved'] == true
+                              ? AppColors.vibrantMint
+                              : Colors.white.withOpacity(0.8),
                           size: 20,
                         ),
                       ),

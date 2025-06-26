@@ -7,6 +7,7 @@ enum TabType {
   home,
   fitness,
   chat,
+  diet,
   profile,
   personalInfo,
   fitnessGoals,
@@ -56,6 +57,15 @@ class BackgroundGradient extends StatelessWidget {
         // Soft purple to warm pink
         primaryColor = AppColors.chatGradient1;
         secondaryColor = AppColors.chatGradient2;
+        break;
+      case TabType.diet:
+        // Earth tones: green to warm yellow - symbolizes natural foods, health and wellbeing
+        // Green psychologically represents health while yellow represents optimism
+        // Perfect for dietary information
+        primaryColor = const Color(0xFF4A6C2F);
+        secondaryColor = const Color(0xFFB49A67);
+        opacity = 0.6;
+        blurRadius = 30;
         break;
       case TabType.profile:
         // Teal to blue-green
